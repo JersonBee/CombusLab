@@ -3,6 +3,9 @@ __pycache__/
 .hypothesis/
 tmp/psi_public_client.js
 *.duckdb.wal
+/.env
+/supabase/**/.env*
+/supabase/.temp/
 /data/
 /outputs/
 /datasets/*.csv

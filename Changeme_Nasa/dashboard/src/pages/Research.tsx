@@ -4,6 +4,7 @@ import type { ChartOptions } from 'chart.js'
 import '../components/Charts'
 import { FlameTitle } from '../components/FlameTitle'
 import { useReading, RequestStatus } from '../components/ScientificReading'
+import { ChartAssistant } from '../components/ChartAssistant'
 
 const studies = [
   ['PSI-98', 'SAFFIRE-I'], ['PSI-99', 'SAFFIRE-II'], ['PSI-100', 'SAFFIRE-III'],
@@ -64,6 +65,10 @@ function TimeSeries({ id }: { id: string }) {
   const params = new URLSearchParams({ experiment_id: id, from_s: selection.from, to_s: selection.to })
   const series = useReading<Series>('/api/series?' + params)
   const data = series.data
+  const explainable = channels.filter(({ name }) =>
+    data?.units.some(({ channel, unit }) => channel === name && unit) &&
+    data.rows.some((row) => row[name] !== null)
+  ).map(({ name }) => name)
   return (
     <section className="svg-subpanel p-5 space-y-4" aria-label="Synchronized measurements">
       <h3 className="svg-section-heading">Synchronized measurements</h3>
@@ -93,6 +98,9 @@ function TimeSeries({ id }: { id: string }) {
             </div>
           ) : <p>No O₂ or CO₂ readings in this window.</p>}
           {data.source.url && <a className="underline" href={data.source.url}>NASA PSI measurement source</a>}
+          {!data.truncated && explainable.length > 0 &&
+            <ChartAssistant key={params.toString()} id={id}
+              from={Number(selection.from)} to={Number(selection.to)} channels={explainable} />}
         </>
       )}
     </section>

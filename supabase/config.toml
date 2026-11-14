@@ -1,0 +1,4 @@
+project_id = "combuslab"
+
+[functions.chart-assistant]
+verify_jwt = true
