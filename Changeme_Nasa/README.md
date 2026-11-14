@@ -1,6 +1,12 @@
 # CombusLab
 
-The React/Vite dashboard and the read-only API share the Vercel deployment. The Research page queries the NASA catalog, trial details and time series. The local file explorer is available separately under Data.
+The React/Vite dashboard and the read-only Node.js API share a Vercel Services deployment. The Research page queries the NASA catalog, trial details and time series. The local file explorer is available separately under Data.
+
+## Vercel Services
+
+Use the Git repository root as the Vercel Root Directory so Vercel reads the [root configuration](../vercel.json). The API owns `/api` and `/api/*`. The dashboard serves the remaining paths, including direct links to React routes. Browser requests use relative `/api/*` URLs on the same domain. Supabase and Sentry are external integrations.
+
+Run `vercel dev --local` from the Git repository root with a CLI that supports Services. Supply the database and optional Sentry variables to the local Vercel process. The two-terminal instructions below run the same API handlers outside Vercel.
 
 ## Local development
 
