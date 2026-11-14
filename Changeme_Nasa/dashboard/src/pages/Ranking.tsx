@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowUpDown, SlidersHorizontal, Upload } from 'lucide-react'
 import { DynamicBarChart, EmptyChartState } from '../components/Charts'
-import { FlameTitle } from '../components/FlameTitle'
 import { useDataStore } from '../context/DataStoreContext'
 
 export function Ranking() {
@@ -36,7 +35,7 @@ export function Ranking() {
 
   return (
     <div className="space-y-6">
-      <FlameTitle>Ranking</FlameTitle>
+      <h1 className="svg-page-title text-center">Ranking</h1>
 
       <section className="svg-black-panel p-6 md:p-10 space-y-8">
         <p className="svg-lead-text max-w-3xl mx-auto text-center">
