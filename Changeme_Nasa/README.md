@@ -26,6 +26,19 @@ Open Comparations and choose two distinct trial IDs from the catalog. The overla
 
 Downloads are per trial. The series links preserve the selected channel and time window. The conditions links export the test observations listed in the card. For CSV, see [export fields](docs/export-fields.md). Unquoted empty CSV fields and JSON nulls represent missing values.
 
+## Testing and error monitoring
+
+Use Node.js 24. From the Git repository root, run `npm ci --prefix Changeme_Nasa` and `npm ci --prefix Changeme_Nasa/dashboard`. The first command installs the Husky hook for local clones. The hook runs the Vitest suite before a commit. To run it separately, use `npm test --prefix Changeme_Nasa`. The API tests use a simulated database and cover validation, pagination, CSV nulls, and server errors.
+
+| Vercel variable | Purpose |
+|---|---|
+| `VITE_SENTRY_DSN` | Public DSN of the React project in Sentry. Captures rendering errors and uncaught browser errors. |
+| `SENTRY_DSN` | DSN of the Node project. Reports handled API failures with the route and a sanitized database error code. |
+| `VITE_SENTRY_ENVIRONMENT`, `SENTRY_ENVIRONMENT` | Optional environment labels. Use distinct labels for production and preview. |
+| `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` | Optional browser source-map upload. Use the React project slug and keep the token in the build environment as a sensitive variable. |
+
+The dashboard and API run without a DSN. After setting the variables, redeploy and confirm event ingestion in the corresponding Sentry projects. When all upload variables are present, Vite generates hidden source maps and removes them after sending them to Sentry.
+
 ## Database bootstrap
 
 `scripts/publish_metadata.py` initializes the `combuslab` schema from the project's synchronized DuckDB file. It requires DuckDB, psycopg, the official Supabase CA and an administrator connection to the database containing `public.nasa_synchronized`. The bootstrap is a one-time transaction, checks the four input row counts and provisions a login with SELECT grants for the four metadata tables and the synchronized readings. It prompts for the administrator password and writes the generated application login to the specified, previously absent local env file. Use `--help` for the file and connection arguments.

@@ -1,4 +1,5 @@
 import { readSnapshot } from './db.mjs'
+import { reportReadFailure } from './monitoring.mjs'
 
 const maxRows = 5000
 const investigations = ['PSI-98', 'PSI-99', 'PSI-100', 'PSI-26', 'PSI-25']
@@ -130,7 +131,8 @@ export async function handleReading(kind, request, response) {
     if (result.truncated) return send(422, { error: 'Select a smaller time window for a complete export' })
     return sendExport(response, result, mode, format, id, channel)
   } catch (error) {
-    console.error('CombusLab read failed', error.code ?? error.name)
+    console.error('CombusLab read failed', error?.code ?? error?.name)
+    await reportReadFailure(error, kind)
     return send(503, { error: 'Scientific data temporarily unavailable' })
   }
 }
