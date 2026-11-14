@@ -77,15 +77,23 @@ async function explain(request: Request) {
     if (!response.ok) return json({ error: 'Evidence service unavailable' }, 502)
     const series = await response.json()
     const unit = series.units.find((item: { channel: string }) => item.channel === channel)?.unit
-    const values: number[] = series.rows.map((row: Record<string, unknown>) => row[channel as Channel])
-      .filter((value: unknown) => typeof value === 'number' && Number.isFinite(value))
+    const readings = (series.rows as Array<{ time_s: number } & Record<Channel, number | null>>)
+      .map((row) => ({ time_s: row.time_s, value: row[channel as Channel] }))
+      .filter((row): row is { time_s: number; value: number } =>
+        typeof row.value === 'number' && Number.isFinite(row.value))
+    const values = readings.map(({ value }) => value)
     if (!unit || !values.length || series.truncated) {
       return json({ answer: null, reason: 'Insufficient evidence for this window', sources: [] })
     }
+    const first = readings[0]
+    const last = readings[readings.length - 1]
     const evidence = {
       experiment_id, channel, unit, from_s, to_s, time_reference: series.time_reference,
       source: series.source, rows: series.rows.length, missing: series.rows.length - values.length,
-      first: values[0], last: values.at(-1), min: Math.min(...values), max: Math.max(...values),
+      valid: values.length, first: first.value, last: last.value,
+      first_time_s: first.time_s, last_time_s: last.time_s,
+      delta_percentage_points: unit === '%' && readings.length > 1 ? last.value - first.value : null,
+      min: Math.min(...values), max: Math.max(...values),
       mean: values.reduce((sum, value) => sum + value, 0) / values.length,
     }
     const result = await completions(question, evidence)

@@ -10,7 +10,31 @@ type Answer = {
   answer: string | null
   reason?: string
   provider?: string
+  evidence?: {
+    unit: string; rows: number; missing: number; valid: number
+    first: number; last: number; first_time_s: number; last_time_s: number
+    min: number; max: number; mean: number; delta_percentage_points: number | null
+  }
   sources: Array<{ url: string | null; doi: string | null }>
+}
+
+const number = new Intl.NumberFormat('es', { maximumFractionDigits: 5 })
+
+function ChartEvidence({ evidence }: { evidence: NonNullable<Answer['evidence']> }) {
+  const format = (value: number) => number.format(value)
+  return (
+    <div className="space-y-1">
+      <p><strong>Lecturas de la ventana</strong></p>
+      <p>Primera válida: {format(evidence.first)} {evidence.unit} a los {format(evidence.first_time_s)} s.
+        Última válida: {format(evidence.last)} {evidence.unit} a los {format(evidence.last_time_s)} s.</p>
+      {evidence.delta_percentage_points !== null &&
+        <p>Cambio entre ambas lecturas: {format(evidence.delta_percentage_points)} puntos porcentuales.</p>}
+      <p>Rango observado: {format(evidence.min)} a {format(evidence.max)} {evidence.unit}.
+        Promedio: {format(evidence.mean)} {evidence.unit}.</p>
+      <p>{evidence.valid} lecturas válidas y {evidence.missing} valores ausentes en {evidence.rows} filas.</p>
+      {evidence.missing > 0 && <p>Los huecos indican valores ausentes para este canal. La serie no indica su causa.</p>}
+    </div>
+  )
 }
 
 function nasaLink(value: string | null) {
@@ -107,7 +131,8 @@ export function ChartAssistant({ id, from, to, channels }: {
             {turns.map(({ question: prompt, channel: selected, reply }, index) => (
               <li key={index} className="border-b border-white/15 pb-3">
                 <p><strong>{selected === 'o2' ? 'O₂' : 'CO₂'} · {prompt}</strong></p>
-                <p className="whitespace-pre-wrap">{reply.answer ?? reply.reason ?? 'Insufficient evidence'}</p>
+                {reply.evidence && Number.isFinite(reply.evidence.first_time_s) && <ChartEvidence evidence={reply.evidence} />}
+                <p className="whitespace-pre-wrap">{reply.answer?.replace(/\*\*([^*\n]+)\*\*/g, '$1') ?? reply.reason ?? 'Insufficient evidence'}</p>
                 {reply.provider && <p>AI interpretation · {reply.provider}</p>}
                 {reply.sources.map((source, sourceIndex) => {
                   const href = nasaLink(source.url)
