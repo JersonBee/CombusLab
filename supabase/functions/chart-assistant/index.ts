@@ -96,6 +96,25 @@ async function explain(request: Request) {
       min: Math.min(...values), max: Math.max(...values),
       mean: values.reduce((sum, value) => sum + value, 0) / values.length,
     }
+    const normalized = question.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
+    const asksAboutGaps = /\b(huecos?|faltantes?|nulos?|ausentes?)\b/.test(normalized)
+    const asksAboutChange = /\b(cambio|cambiaron|vario|aumento|disminuyo|subio|bajo|tendencia)\b/.test(normalized)
+    const asksForCause = /\b(por que|causa\w*|motivo\w*|debido)\b/.test(normalized)
+    if (asksAboutGaps || asksAboutChange || asksForCause) {
+      const paragraphs: string[] = []
+      if (asksAboutChange) {
+        paragraphs.push(readings.length < 2
+          ? 'La ventana contiene una sola lectura válida, así que no se puede comparar el inicio con el final.'
+          : `La última lectura válida fue ${last.value > first.value ? 'mayor que' : last.value < first.value ? 'menor que' : 'igual a'} la primera. Esta comparación de dos lecturas no establece una tendencia continua.`)
+      }
+      if (asksAboutGaps) {
+        paragraphs.push(evidence.missing > 0
+          ? `Hay ${evidence.missing} filas sin un valor válido de este canal. La serie no indica por qué faltan esas lecturas.`
+          : 'Todas las filas de esta ventana tienen un valor válido para el canal seleccionado.')
+      }
+      if (asksForCause && !asksAboutGaps) paragraphs.push('La serie por sí sola no permite determinar la causa de los cambios observados.')
+      return json({ answer: paragraphs.join('\n\n'), evidence, sources: [series.source] })
+    }
     const result = await completions(question, evidence)
     return json({ ...result, evidence, sources: [series.source] })
   } catch {

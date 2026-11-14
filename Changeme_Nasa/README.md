@@ -1,16 +1,16 @@
 # CombusLab
 
-The React/Vite dashboard and the read-only Node.js API share a Vercel Services deployment. The Research page queries the NASA catalog, trial details and time series. The local file explorer is available separately under Data.
+The React/Vite dashboard and the Node.js API form a single deployable application. Research queries the NASA catalog, trial details and time series. The local file explorer is available under Data.
 
-## Vercel Services
+## Architecture and deployment
 
-Use the Git repository root as the Vercel Root Directory so Vercel reads the [root configuration](../vercel.json). The API owns `/api` and `/api/*`. The dashboard serves the remaining paths, including direct links to React routes. Browser requests use relative `/api/*` URLs on the same domain. Supabase and Sentry are external integrations.
+Use the Git repository root as the Vercel Root Directory so Vercel reads the [root configuration](../vercel.json). One deployment publishes the dashboard and its Node.js functions. Browser requests use relative `/api/*` URLs on the same domain.
 
-Run `vercel dev --local` from the Git repository root with a CLI that supports Services. Supply the database and optional Sentry variables to the local Vercel process. The two-terminal instructions below run the same API handlers outside Vercel.
+The HTTP adapter validates requests and coordinates the catalog, experiments, series and export modules in `server/modules/`. Read operations share a read-only PostgreSQL snapshot. The chart assistant calls the Supabase Edge Function, where provider credentials and session verification are managed. Sentry monitors the dashboard and API.
 
 ## Local development
 
-From the repository root, run `npm ci` and `npm run api`. The API listens on port 8787. In a second terminal, run `npm ci` and `npm run dev` inside `dashboard/`. Vite proxies `/api` to the local server.
+From the Git repository root, run `npm ci --prefix Changeme_Nasa` and `npm run api --prefix Changeme_Nasa`. The API listens on port 8787. In a second terminal, run `npm ci --prefix Changeme_Nasa/dashboard` and `npm run dev --prefix Changeme_Nasa/dashboard`. Vite proxies `/api` to the local server.
 
 The API requires `COMBUSLAB_DB_HOST`, `COMBUSLAB_DB_USER`, `COMBUSLAB_DB_PASSWORD`, and `COMBUSLAB_DB_CA`. The CA variable contains the PEM certificate and the user includes the project suffix on the Supabase Session pooler. These values belong in the ignored root `.env` locally and in the server-side environment for deployment.
 
