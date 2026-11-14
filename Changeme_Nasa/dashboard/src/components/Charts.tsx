@@ -41,12 +41,16 @@ export function DynamicBarChart({
   rows,
   labelColumn,
   valueColumn,
+  labelTitle = labelColumn,
+  valueTitle = valueColumn,
   horizontal = false,
   accentColor = '#FEB352',
 }: {
   rows: Record<string, string | number | boolean | null>[]
   labelColumn: string
   valueColumn: string
+  labelTitle?: string
+  valueTitle?: string
   horizontal?: boolean
   accentColor?: string
 }) {
@@ -61,7 +65,7 @@ export function DynamicBarChart({
     labels,
     datasets: [
       {
-        label: valueColumn,
+        label: valueTitle,
         data: values,
         backgroundColor: accentColor,
         borderColor: accentColor,
@@ -85,7 +89,7 @@ export function DynamicBarChart({
         ticks: { color: TICK_COLOR, font: { size: 11 } },
         title: {
           display: true,
-          text: horizontal ? valueColumn : labelColumn,
+          text: horizontal ? valueTitle : labelTitle,
           color: AXIS_TITLE_COLOR,
           font: { size: 11, weight: 'bold' },
         },
@@ -96,7 +100,7 @@ export function DynamicBarChart({
         ticks: { color: TICK_COLOR, font: { size: 11 } },
         title: {
           display: true,
-          text: horizontal ? labelColumn : valueColumn,
+          text: horizontal ? labelTitle : valueTitle,
           color: AXIS_TITLE_COLOR,
           font: { size: 11, weight: 'bold' },
         },

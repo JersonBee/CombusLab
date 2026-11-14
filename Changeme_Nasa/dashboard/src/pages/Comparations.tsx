@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Line } from 'react-chartjs-2'
 import '../components/Charts'
-import { FlameTitle } from '../components/FlameTitle'
 import { RequestStatus, useReading } from '../components/ScientificReading'
 
 type Trial = {
@@ -204,7 +203,7 @@ export function Comparations() {
   const [right, setRight] = useState<Trial>()
   return (
     <div className="space-y-6">
-      <FlameTitle>Compare trials</FlameTitle>
+      <h1 className="svg-page-title text-center">Compare trials</h1>
       <div className="grid gap-4 md:grid-cols-2">
         <TrialPicker label="Trial A" trial={left} onSelect={setLeft} />
         <TrialPicker label="Trial B" trial={right} onSelect={setRight} />

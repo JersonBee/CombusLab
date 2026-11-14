@@ -16,7 +16,8 @@ export function Ranking() {
         <p>Studies are ranked by the number of trials with synchronized measurements or tabular test conditions.</p>
         {!inventory.data ? <RequestStatus {...inventory} /> : !studies.length ? <p>No studies available.</p> : (
           <>
-            <DynamicBarChart rows={studies} labelColumn="study_name" valueColumn="quantitative_trials" horizontal />
+            <DynamicBarChart rows={studies} labelColumn="study_name" valueColumn="quantitative_trials"
+              labelTitle="Investigation" valueTitle="Trials with quantitative data" horizontal />
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead><tr>{['Investigation', 'Catalog trials', 'With series', 'With conditions'].map(label => <th className="p-2" scope="col" key={label}>{label}</th>)}</tr></thead>

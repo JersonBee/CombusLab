@@ -66,7 +66,7 @@ export function ChartAssistant({ id, from, to, channels }: {
     return () => data.subscription.unsubscribe()
   }, [])
 
-  if (!supabase) return <p>Chart assistant is unavailable in this environment.</p>
+  if (!supabase) return <p id="chart-assistant" tabIndex={-1}>Chart assistant is unavailable in this environment.</p>
   const client = supabase
   async function signIn() {
     setBusy(true)
@@ -107,7 +107,7 @@ export function ChartAssistant({ id, from, to, channels }: {
   }
 
   return (
-    <section className="svg-subpanel p-4 space-y-3" aria-label="Chart assistant">
+    <section id="chart-assistant" tabIndex={-1} className="svg-subpanel p-4 space-y-3" aria-label="Chart assistant">
       <h4 className="svg-section-heading">Chart assistant</h4>
       <p>{id} · {from}–{to} s</p>
       {session === undefined ? <p role="status">Checking session…</p> : session === null ? (

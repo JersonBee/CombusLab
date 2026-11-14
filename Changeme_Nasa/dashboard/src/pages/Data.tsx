@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom'
-import { FlameTitle } from '../components/FlameTitle'
 import { RequestStatus } from '../components/ScientificReading'
 import { StudyLink, useInventory } from '../components/StudyInventory'
 
@@ -7,7 +6,7 @@ export function Data() {
   const inventory = useInventory()
   return (
     <div className="space-y-6">
-      <FlameTitle>Data</FlameTitle>
+      <h1 className="svg-page-title text-center">Data</h1>
       <section className="svg-black-panel p-6 md:p-10 space-y-4">
         <h2 className="svg-section-heading">Integrated NASA datasets</h2>
         {!inventory.data ? <RequestStatus {...inventory} /> : !inventory.data.rows.length ? <p>No studies available.</p> : (

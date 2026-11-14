@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useLocation, useSearchParams } from 'react-router-dom'
 import { Line } from 'react-chartjs-2'
 import type { ChartOptions } from 'chart.js'
 import '../components/Charts'
-import { FlameTitle } from '../components/FlameTitle'
 import { useReading, RequestStatus } from '../components/ScientificReading'
 import { ChartAssistant } from '../components/ChartAssistant'
+import type { Catalog } from '../components/StudyInventory'
 
 const studies = [
   ['PSI-98', 'SAFFIRE-I'], ['PSI-99', 'SAFFIRE-II'], ['PSI-100', 'SAFFIRE-III'],
@@ -16,14 +16,6 @@ const channels = [
   { name: 'co2', label: 'CO₂', color: '#FEB352' },
 ] as const
 
-type Trial = {
-  experiment_id: string
-  study_name: string
-  material_original: string | null
-  has_series: boolean
-  has_conditions: boolean
-}
-type Catalog = { has_next: boolean; rows: Trial[] }
 type Condition = {
   field: string
   value: number | null
@@ -41,6 +33,7 @@ type Detail = {
     thickness_mm: number | null; length_mm: number | null; width_mm: number | null
     air_velocity_cm_s: number | null
     source_test_id: string | null; source_sample_id: string | null; test_date: string | null
+    saffire_filas: number | string | null; cygnus_filas: number | string | null
   }
   conditions: Condition[]
 }
@@ -109,13 +102,13 @@ function TimeSeries({ id }: { id: string }) {
   )
 }
 
-function TrialDetail({ trial }: { trial: Trial }) {
-  const detail = useReading<Detail>('/api/experiment?' + new URLSearchParams({ experiment_id: trial.experiment_id }))
+function TrialDetail({ id }: { id: string }) {
+  const detail = useReading<Detail>('/api/experiment?' + new URLSearchParams({ experiment_id: id }))
   if (!detail.data) return <RequestStatus {...detail} />
   const { experiment, conditions } = detail.data
   return (
     <section className="svg-subpanel p-5 space-y-4" aria-label="Trial details">
-      <h2 className="svg-section-heading">{experiment.study_name} · {trial.experiment_id}</h2>
+      <h2 className="svg-section-heading">{experiment.study_name} · <code>{id}</code></h2>
       <p>Material: {experiment.material_original ?? 'Not recorded'}</p>
       <p>{[experiment.source_test_id && `Source test: ${experiment.source_test_id}`,
         experiment.source_sample_id && `Sample: ${experiment.source_sample_id}`,
@@ -129,7 +122,7 @@ function TrialDetail({ trial }: { trial: Trial }) {
         ))}
       </dl>
       <p>{experiment.source_url && <a className="underline" href={experiment.source_url}>NASA PSI source</a>}
-        {experiment.source_doi && <> · DOI {experiment.source_doi}</>}
+        {experiment.source_doi && <> · DOI <code>{experiment.source_doi}</code></>}
         {experiment.repository_version && <> · Version {experiment.repository_version}</>}</p>
       {conditions.length > 0 && (
         <div className="overflow-x-auto">
@@ -147,7 +140,7 @@ function TrialDetail({ trial }: { trial: Trial }) {
           </table>
         </div>
       )}
-      {trial.has_series ? <TimeSeries id={trial.experiment_id} /> : (
+      {Number(experiment.saffire_filas) + Number(experiment.cygnus_filas) > 0 ? <TimeSeries id={id} /> : (
         <p>{conditions.length ? 'Test conditions are available in the table above.' : 'This catalog entry provides trial identification and provenance.'} Synchronized measurements are unavailable for this trial.</p>
       )}
     </section>
@@ -158,24 +151,30 @@ const emptyFilters = { q: '', investigation_id: '', flow_min: '', flow_max: '', 
 
 export function Research() {
   const [params] = useSearchParams()
-  const investigation = params.get('investigation_id') ?? ''
-  return <ResearchCatalog key={investigation} investigation={investigation} />
+  const { key } = useLocation()
+  return <ResearchCatalog key={key}
+    investigation={params.get('investigation_id') ?? ''}
+    experiment={params.get('experiment_id') ?? ''}
+    coverage={params.get('coverage') === 'series' ? 'series' : ''} />
 }
 
-function ResearchCatalog({ investigation }: { investigation: string }) {
-  const [draft, setDraft] = useState({ ...emptyFilters, investigation_id: investigation })
+function ResearchCatalog({ investigation, experiment, coverage }: {
+  investigation: string; experiment: string; coverage: string
+}) {
+  const [draft, setDraft] = useState({ ...emptyFilters, investigation_id: investigation, coverage })
   const [filters, setFilters] = useState(draft)
   const [page, setPage] = useState(1)
-  const [trial, setTrial] = useState<Trial>()
+  const [trialId, setTrialId] = useState(experiment)
   const catalog = useReading<Catalog>('/api/catalog?' + new URLSearchParams({ ...filters, page: String(page) }))
   return (
     <div className="space-y-6">
-      <FlameTitle>Research</FlameTitle>
+      <h1 className="svg-page-title text-center">Research</h1>
+      {experiment && trialId === experiment && <TrialDetail key={trialId} id={trialId} />}
       <section className="svg-black-panel p-6 md:p-10 space-y-5">
         <form className="flex flex-wrap gap-3 items-end" onSubmit={(event) => {
           event.preventDefault()
           setPage(1)
-          setTrial(undefined)
+          setTrialId('')
           setFilters(draft)
         }}>
           <label className="flex flex-col">Study, trial or material
@@ -202,6 +201,8 @@ function ResearchCatalog({ investigation }: { investigation: string }) {
           ))}
           <button className="svg-input px-4 py-2">Search</button>
         </form>
+        {coverage === 'series' && filters.coverage === 'series' && !trialId &&
+          <p>Choose a trial to open its chart and ask a question.</p>}
         {(filters.flow_min || filters.flow_max) && <p>Airflow ranges apply to trials with a verified airflow value in the catalog.</p>}
         {!catalog.data ? <RequestStatus {...catalog} /> : (
           <>
@@ -209,8 +210,8 @@ function ResearchCatalog({ investigation }: { investigation: string }) {
               <ul className="grid gap-2 md:grid-cols-2">
                 {catalog.data.rows.map((row) => (
                   <li key={row.experiment_id}>
-                    <button type="button" aria-pressed={trial?.experiment_id === row.experiment_id} className="svg-input p-3 text-left w-full" onClick={() => setTrial(row)}>
-                      <strong>{row.study_name} · {row.experiment_id}</strong>
+                    <button type="button" aria-pressed={trialId === row.experiment_id} className="svg-input p-3 text-left w-full" onClick={() => setTrialId(row.experiment_id)}>
+                      <strong>{row.study_name} · <code>{row.experiment_id}</code></strong>
                       <span className="block">{row.material_original ?? 'Material not recorded'}</span>
                       <span className="block">{[row.has_series && 'Time series', row.has_conditions && 'Test conditions'].filter(Boolean).join(' · ') || 'Catalog record'}</span>
                     </button>
@@ -226,7 +227,7 @@ function ResearchCatalog({ investigation }: { investigation: string }) {
           </>
         )}
       </section>
-      {trial && <TrialDetail key={trial.experiment_id} trial={trial} />}
+      {trialId && trialId !== experiment && <TrialDetail key={trialId} id={trialId} />}
     </div>
   )
 }
