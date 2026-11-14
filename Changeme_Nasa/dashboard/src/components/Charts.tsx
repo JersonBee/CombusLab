@@ -45,6 +45,7 @@ export function DynamicBarChart({
   valueTitle = valueColumn,
   horizontal = false,
   accentColor = '#FEB352',
+  maximum,
 }: {
   rows: Record<string, string | number | boolean | null>[]
   labelColumn: string
@@ -53,6 +54,7 @@ export function DynamicBarChart({
   valueTitle?: string
   horizontal?: boolean
   accentColor?: string
+  maximum?: number
 }) {
   const sliced = rows.slice(0, 24)
   const labels = sliced.map((r, i) => String(r[labelColumn] ?? `#${i + 1}`))
@@ -85,6 +87,8 @@ export function DynamicBarChart({
     },
     scales: {
       x: {
+        beginAtZero: horizontal,
+        max: horizontal ? maximum : undefined,
         grid: { color: GRID_COLOR },
         ticks: { color: TICK_COLOR, font: { size: 11 } },
         title: {
@@ -95,7 +99,8 @@ export function DynamicBarChart({
         },
       },
       y: {
-        beginAtZero: true,
+        beginAtZero: !horizontal,
+        max: horizontal ? undefined : maximum,
         grid: { color: GRID_COLOR },
         ticks: { color: TICK_COLOR, font: { size: 11 } },
         title: {
@@ -110,7 +115,7 @@ export function DynamicBarChart({
 
   return (
     <div className="h-[290px] w-full">
-      <Bar data={data} options={options} />
+      <Bar role="img" aria-label={valueTitle + ' by ' + labelTitle.toLowerCase()} data={data} options={options} />
     </div>
   )
 }

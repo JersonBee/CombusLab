@@ -1,13 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useReading } from './ScientificReading'
-
-export type Trial = {
-  experiment_id: string
-  study_name: string
-  material_original: string | null
-  has_series: boolean
-  has_conditions: boolean
-}
+import type { Evidence, Trial } from '../scientificEvidence'
 
 export type Catalog = { has_next: boolean; rows: Trial[] }
 
@@ -25,6 +18,10 @@ export type Study = {
 
 export function useInventory() {
   return useReading<{ rows: Study[] }>('/api/catalog?view=inventory')
+}
+
+export function useEvidence() {
+  return useReading<{ rows: Evidence[] }>('/api/catalog?view=evidence')
 }
 
 export function StudyLink({ study }: { study: Study }) {

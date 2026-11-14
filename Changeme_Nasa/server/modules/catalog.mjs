@@ -24,6 +24,27 @@ export async function readInventory(db) {
   return { rows }
 }
 
+export async function readEvidence(db) {
+  const { rows } = await db.query(
+    `SELECT e.experiment_id, e.investigation_id, e.study_name, e.material_original,
+       e.material_normalized, e.source_url, e.source_doi, e.repository_version,
+       e.air_velocity_cm_s, e.flow_direction, e.oxygen_ambient_pct, e.oxygen_ambient_status,
+       e.oxygen_ambient_qualifier, e.oxygen_initial_pct, e.oxygen_initial_status,
+       (e.carbon_monoxide_initial_ppm IS NOT NULL OR e.carbon_monoxide_final_ppm IS NOT NULL) AS has_co,
+       e.ignition_power_w, e.burn_duration_s, e.length_mm, e.width_mm, e.thickness_mm,
+       ${seriesCoverage} AS has_series, ${conditionsCoverage} AS has_conditions,
+       ARRAY(SELECT DISTINCT u.channel FROM combuslab.saffire_channel_units u
+         WHERE u.investigation_id = e.investigation_id AND u.test = e.source_test_id
+           AND u.channel IN ('o2', 'co2') AND u.unit = '%' AND (${seriesCoverage})
+         ORDER BY u.channel) AS series_channels
+     FROM combuslab.experiment_catalog e
+     WHERE e.investigation_id = ANY($1::text[])
+     ORDER BY e.study_name, e.experiment_id`,
+    [investigations],
+  )
+  return { rows }
+}
+
 export async function readCatalog(db, filters) {
   const coverage = coveragePredicates.get(filters.coverage)
   const { rows } = await db.query(

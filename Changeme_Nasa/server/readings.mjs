@@ -1,6 +1,6 @@
 import { readSnapshot } from './db.mjs'
 import { reportReadFailure } from './monitoring.mjs'
-import { investigations, readCatalog, readInventory } from './modules/catalog.mjs'
+import { investigations, readCatalog, readEvidence, readInventory } from './modules/catalog.mjs'
 import { findExperiment, readConditions } from './modules/experiments.mjs'
 import { channelNames, readSeries } from './modules/series.mjs'
 import { selectSeriesChannel, sendExport } from './modules/exports.mjs'
@@ -46,6 +46,7 @@ export async function handleReading(kind, request, response) {
   try {
     const result = await readSnapshot(async (db) => {
       if (kind === 'catalog' && view === 'inventory') return readInventory(db)
+      if (kind === 'catalog' && view === 'evidence') return readEvidence(db)
       if (kind === 'catalog') return readCatalog(db, { study, query, page, flowMin, flowMax, coverage })
       const experiment = await findExperiment(db, id)
       if (!experiment) return null
