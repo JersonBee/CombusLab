@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Line } from 'react-chartjs-2'
 import type { ChartOptions } from 'chart.js'
 import '../components/Charts'
@@ -39,6 +40,7 @@ type Detail = {
     source_doi: string | null; repository_version: string | null
     thickness_mm: number | null; length_mm: number | null; width_mm: number | null
     air_velocity_cm_s: number | null
+    source_test_id: string | null; source_sample_id: string | null; test_date: string | null
   }
   conditions: Condition[]
 }
@@ -115,6 +117,9 @@ function TrialDetail({ trial }: { trial: Trial }) {
     <section className="svg-subpanel p-5 space-y-4" aria-label="Trial details">
       <h2 className="svg-section-heading">{experiment.study_name} · {trial.experiment_id}</h2>
       <p>Material: {experiment.material_original ?? 'Not recorded'}</p>
+      <p>{[experiment.source_test_id && `Source test: ${experiment.source_test_id}`,
+        experiment.source_sample_id && `Sample: ${experiment.source_sample_id}`,
+        experiment.test_date && `Test date: ${experiment.test_date}`].filter(Boolean).join(' · ')}</p>
       <dl className="grid grid-cols-2 gap-2 md:grid-cols-4">
         {([
           ['Length (mm)', experiment.length_mm], ['Width (mm)', experiment.width_mm],
@@ -142,16 +147,24 @@ function TrialDetail({ trial }: { trial: Trial }) {
           </table>
         </div>
       )}
-      {trial.has_series ? <TimeSeries id={trial.experiment_id} /> : <p>No synchronized time series for this trial.</p>}
+      {trial.has_series ? <TimeSeries id={trial.experiment_id} /> : (
+        <p>{conditions.length ? 'Test conditions are available in the table above.' : 'This catalog entry provides trial identification and provenance.'} Synchronized measurements are unavailable for this trial.</p>
+      )}
     </section>
   )
 }
 
-const emptyFilters = { q: '', investigation_id: '', flow_min: '', flow_max: '' }
+const emptyFilters = { q: '', investigation_id: '', flow_min: '', flow_max: '', coverage: '' }
 
 export function Research() {
-  const [draft, setDraft] = useState(emptyFilters)
-  const [filters, setFilters] = useState(emptyFilters)
+  const [params] = useSearchParams()
+  const investigation = params.get('investigation_id') ?? ''
+  return <ResearchCatalog key={investigation} investigation={investigation} />
+}
+
+function ResearchCatalog({ investigation }: { investigation: string }) {
+  const [draft, setDraft] = useState({ ...emptyFilters, investigation_id: investigation })
+  const [filters, setFilters] = useState(draft)
   const [page, setPage] = useState(1)
   const [trial, setTrial] = useState<Trial>()
   const catalog = useReading<Catalog>('/api/catalog?' + new URLSearchParams({ ...filters, page: String(page) }))
@@ -168,6 +181,14 @@ export function Research() {
           <label className="flex flex-col">Study, trial or material
             <input className="svg-input p-2" maxLength={120} value={draft.q} onChange={(e) => setDraft({ ...draft, q: e.target.value })} />
           </label>
+          <label className="flex flex-col">Available evidence
+            <select className="svg-input p-2" value={draft.coverage} onChange={(e) => setDraft({ ...draft, coverage: e.target.value })}>
+              <option value="">All trials</option>
+              <option value="series">Synchronized series</option>
+              <option value="conditions">Tabular conditions</option>
+              <option value="catalog">Catalog metadata</option>
+            </select>
+          </label>
           <label className="flex flex-col">Investigation
             <select className="svg-input p-2" value={draft.investigation_id} onChange={(e) => setDraft({ ...draft, investigation_id: e.target.value })}>
               <option value="">All investigations</option>
@@ -181,6 +202,7 @@ export function Research() {
           ))}
           <button className="svg-input px-4 py-2">Search</button>
         </form>
+        {(filters.flow_min || filters.flow_max) && <p>Airflow ranges apply to trials with a verified airflow value in the catalog.</p>}
         {!catalog.data ? <RequestStatus {...catalog} /> : (
           <>
             {catalog.data.rows.length === 0 ? <p role="status">No matching trials.</p> : (

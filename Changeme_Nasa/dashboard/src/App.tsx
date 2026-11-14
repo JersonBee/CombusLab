@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { BrowserRouter, NavLink, Navigate, Route, Routes } from 'react-router-dom'
 import { Menu, X } from 'lucide-react'
 import logoSvg from './assets/logo.svg'
-import { DataStoreProvider } from './context/DataStoreContext'
 import { Ranking } from './pages/Ranking'
 import { Research } from './pages/Research'
 import { Comparations } from './pages/Comparations'
@@ -93,10 +92,8 @@ function Shell() {
 
 export default function App() {
   return (
-    <DataStoreProvider>
-      <BrowserRouter>
-        <Shell />
-      </BrowserRouter>
-    </DataStoreProvider>
+    <BrowserRouter>
+      <Shell />
+    </BrowserRouter>
   )
 }

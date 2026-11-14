@@ -1,6 +1,6 @@
 # CombusLab
 
-The React/Vite dashboard and the Node.js API form a single deployable application. Research queries the NASA catalog, trial details and time series. The local file explorer is available under Data.
+The React/Vite dashboard and the Node.js API form a single deployable application. The dashboard loads the integrated NASA catalog from Supabase automatically. Ranking orders investigations by the number of trials with synchronized series or tabular conditions. Data shows coverage and Resources links to the original NASA PSI sources.
 
 ## Architecture and deployment
 
@@ -18,6 +18,7 @@ The API requires `COMBUSLAB_DB_HOST`, `COMBUSLAB_DB_USER`, `COMBUSLAB_DB_PASSWOR
 
 | Request | Response |
 |---|---|
+| `GET /api/catalog?view=inventory` | Per-investigation trial counts, quantitative coverage and NASA PSI sources. |
 | `GET /api/catalog?investigation_id=PSI-25&page=1` | Up to 20 trial records with coverage flags. Optional filters are `q`, `flow_min` and `flow_max` in cm/s. |
 | `GET /api/experiment?experiment_id=PSI-25:B10:r11` | BASS-II trial metadata, PSI provenance and six tabular conditions. |
 | `GET /api/series?experiment_id=PSI-100:S1:r2&from_s=0&to_s=60` | 1,877 synchronized rows with O₂ and CO₂, units, provenance and time in seconds. |

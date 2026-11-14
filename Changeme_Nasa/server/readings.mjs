@@ -1,6 +1,6 @@
 import { readSnapshot } from './db.mjs'
 import { reportReadFailure } from './monitoring.mjs'
-import { investigations, readCatalog } from './modules/catalog.mjs'
+import { investigations, readCatalog, readInventory } from './modules/catalog.mjs'
 import { findExperiment, readConditions } from './modules/experiments.mjs'
 import { channelNames, readSeries } from './modules/series.mjs'
 import { selectSeriesChannel, sendExport } from './modules/exports.mjs'
@@ -15,6 +15,7 @@ export async function handleReading(kind, request, response) {
     return send(405, { error: 'Method not allowed' })
   }
   const params = new URL(request.url, 'http://localhost').searchParams
+  const view = params.get('view')
   const id = params.get('experiment_id')
   const mode = kind === 'export' ? params.get('mode') : kind
   const format = params.get('format')
@@ -27,9 +28,11 @@ export async function handleReading(kind, request, response) {
   const study = params.get('investigation_id') ?? ''
   const query = (params.get('q') ?? '').trim()
   const page = Number(params.get('page') ?? '1')
+  const coverage = params.get('coverage') ?? ''
   const flowMin = params.get('flow_min')?.trim() ? Number(params.get('flow_min')) : null
   const flowMax = params.get('flow_max')?.trim() ? Number(params.get('flow_max')) : null
   if (kind === 'catalog' && (query.length > 120 || (study && !investigations.includes(study)) ||
+    !['', 'series', 'conditions', 'catalog'].includes(coverage) ||
     !Number.isInteger(page) || page < 1 || page > 100 ||
     [flowMin, flowMax].some((value) => value !== null && (!Number.isFinite(value) || value < 0)) ||
     (flowMin !== null && flowMax !== null && flowMin > flowMax))) {
@@ -42,7 +45,8 @@ export async function handleReading(kind, request, response) {
   }
   try {
     const result = await readSnapshot(async (db) => {
-      if (kind === 'catalog') return readCatalog(db, { study, query, page, flowMin, flowMax })
+      if (kind === 'catalog' && view === 'inventory') return readInventory(db)
+      if (kind === 'catalog') return readCatalog(db, { study, query, page, flowMin, flowMax, coverage })
       const experiment = await findExperiment(db, id)
       if (!experiment) return null
       if (mode === 'experiment' || mode === 'conditions') return readConditions(db, experiment, id)
