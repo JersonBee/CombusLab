@@ -1,6 +1,6 @@
 # CombusLab
 
-The React/Vite dashboard and the Node.js API form a single deployable application. The dashboard loads the integrated NASA catalog from Supabase automatically. Ranking orders investigations by the number of trials with synchronized series or tabular conditions. Data shows coverage and Resources links to the original NASA PSI sources.
+The React/Vite dashboard and Node.js API deploy together. Dashboard opens with a synchronized SAFFIRE series, Discover shows trial details, and Ranking orders investigations by documented scenario matches. Compare shows conditions side by side and overlays compatible measurements. Data Lab provides exports, Safety Insights explains evidence coverage, and Resources links to NASA PSI.
 
 ## Architecture and deployment
 
@@ -29,7 +29,7 @@ The series endpoint accepts windows of up to 60 seconds, orders by epoch and has
 
 ## Comparing and exporting
 
-Open Comparations and choose two distinct trial IDs from the catalog. The overlay supports O₂ and CO₂ when both trials have values for the selected channel, the same documented unit, and compatible relative time axes. For a BASS–SAFFIRE pair, the trial cards show the available experimental context and cite NASA PSI.
+Open Compare and choose two distinct trial IDs from the catalog. The overlay supports O₂ and CO₂ when both trials have values for the selected channel, the same documented unit, and compatible relative time axes. For a BASS–SAFFIRE pair, the side-by-side table shows the available experimental context and the trial cards cite NASA PSI.
 
 Downloads are per trial. The series links preserve the selected channel and time window. The conditions links export the test observations listed in the card. For CSV, see [export fields](docs/export-fields.md). Unquoted empty CSV fields and JSON nulls represent missing values.
 

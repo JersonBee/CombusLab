@@ -115,6 +115,17 @@ it('retains browser origin restrictions', async () => {
   expect(fetcher).not.toHaveBeenCalled()
 })
 
+it('allows the public dashboard preflight without credentials or provider calls', async () => {
+  const response = await handle(new Request('https://supabase.example/functions/v1/chart-assistant', {
+    method: 'OPTIONS',
+    headers: { Origin: origin, 'Access-Control-Request-Method': 'POST', 'Access-Control-Request-Headers': 'apikey,content-type' },
+  }))
+  expect(response.status).toBe(204)
+  expect(response.headers.get('access-control-allow-origin')).toBe(origin)
+  expect(response.headers.get('access-control-allow-headers')).toContain('content-type')
+  expect(fetcher).not.toHaveBeenCalled()
+})
+
 it('rejects an invalid window without fetching data or invoking a model', async () => {
   expect((await ask({ to_s: 61 })).status).toBe(400)
   expect(fetcher).not.toHaveBeenCalled()

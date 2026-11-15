@@ -1,15 +1,17 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { BrowserRouter, NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { ChevronLeft } from 'lucide-react'
 import logoSvg from './assets/logo.svg'
 import assistantIcon from './assets/chart-assistant.svg'
-import { Ranking } from './pages/Ranking'
 import { Dashboard } from './pages/Dashboard'
-import { Discover } from './pages/Research'
-import { Comparations } from './pages/Comparations'
-import { DataLab } from './pages/Data'
-import { SafetyInsights } from './pages/SafetyInsights'
-import { ResourceDetail, Resources } from './pages/Resources'
+
+const Ranking = lazy(() => import('./pages/Ranking').then(module => ({ default: module.Ranking })))
+const Discover = lazy(() => import('./pages/Research').then(module => ({ default: module.Discover })))
+const Comparations = lazy(() => import('./pages/Comparations').then(module => ({ default: module.Comparations })))
+const DataLab = lazy(() => import('./pages/Data').then(module => ({ default: module.DataLab })))
+const SafetyInsights = lazy(() => import('./pages/SafetyInsights').then(module => ({ default: module.SafetyInsights })))
+const Resources = lazy(() => import('./pages/Resources').then(module => ({ default: module.Resources })))
+const ResourceDetail = lazy(() => import('./pages/Resources').then(module => ({ default: module.ResourceDetail })))
 
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard' },
@@ -82,20 +84,22 @@ function Shell() {
 
       <main className="dashboard-main">
         <div className="max-w-[1060px] mx-auto">
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/ranking" element={<Ranking />} />
-            <Route path="/discover" element={<Discover />} />
-            <Route path="/research" element={<LegacyRoute to="/discover" />} />
-            <Route path="/compare" element={<Comparations />} />
-            <Route path="/comparations" element={<LegacyRoute to="/compare" />} />
-            <Route path="/data-lab" element={<DataLab />} />
-            <Route path="/safety-insights" element={<SafetyInsights />} />
-            <Route path="/data" element={<LegacyRoute to="/data-lab" />} />
-            <Route path="/resources" element={<Resources />} />
-            <Route path="/resources/:investigationId" element={<ResourceDetail />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <Suspense fallback={<p role="status">Loading view…</p>}>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/ranking" element={<Ranking />} />
+              <Route path="/discover" element={<Discover />} />
+              <Route path="/research" element={<LegacyRoute to="/discover" />} />
+              <Route path="/compare" element={<Comparations />} />
+              <Route path="/comparations" element={<LegacyRoute to="/compare" />} />
+              <Route path="/data-lab" element={<DataLab />} />
+              <Route path="/safety-insights" element={<SafetyInsights />} />
+              <Route path="/data" element={<LegacyRoute to="/data-lab" />} />
+              <Route path="/resources" element={<Resources />} />
+              <Route path="/resources/:investigationId" element={<ResourceDetail />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
         </div>
       </main>
 
