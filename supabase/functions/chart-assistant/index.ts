@@ -1,6 +1,6 @@
 import { completions } from './providers.ts'
-
 import { channels, chartObservations, summarizeChart, type Channel } from './evidence.ts'
+import { reserveAssistantRequest } from './quota.ts'
 const json = (body: unknown, status = 200) => Response.json(body, { status })
 
 export async function handle(request: Request) {
@@ -20,22 +20,8 @@ export async function handle(request: Request) {
 
 async function explain(request: Request) {
   if (request.method !== 'POST') return json({ error: 'Use POST' }, 405)
-  const token = request.headers.get('Authorization')
-  if (!token?.match(/^Bearer [^\s]+$/i)) return json({ error: 'Sign-in required' }, 401)
-  const supabase = Deno.env.get('SUPABASE_URL')
-  const publishable = Deno.env.get('SUPABASE_ANON_KEY')
   const evidenceOrigin = Deno.env.get('COMBUSLAB_EVIDENCE_ORIGIN')
-  if (!supabase || !publishable || !evidenceOrigin) return json({ error: 'Service not configured' }, 503)
-
-  try {
-    const user = await fetch(new URL('/auth/v1/user', supabase), {
-      headers: { Authorization: token, apikey: publishable }, signal: AbortSignal.timeout(4000),
-    })
-    if (user.status === 401 || user.status === 403) return json({ error: 'Sign-in required' }, 401)
-    if (!user.ok) return json({ error: 'Identity service unavailable' }, 503)
-  } catch {
-    return json({ error: 'Identity service unavailable' }, 503)
-  }
+  if (!evidenceOrigin) return json({ error: 'Service not configured' }, 503)
 
   let chart: Record<string, unknown>
   try {
@@ -82,11 +68,13 @@ async function explain(request: Request) {
     const evidence = { ...summary.evidence, experiment_id, from_s, to_s }
     const observations = chartObservations(evidence)
     const alternates = summary.availableChannels.filter(name => name !== channel)
-    const result = await completions(question.trim(), evidence.channel, observations, alternates)
-    const fallback = [observations.overview, observations.endpoints, observations.gaps, observations.limits].join('\n\n')
+    const quota = await reserveAssistantRequest()
+    const result = quota === 'granted' ? await completions(question.trim(), evidence.channel, observations, alternates) : null
+    const fallback = Object.values(observations).join('\n\n')
     return json(result
       ? { ...result, evidence, sources: [series.source] }
-      : { answer: fallback, fallback: true, evidence, sources: [series.source] })
+      : { answer: fallback, fallback: true, fallback_reason: quota === 'granted' ? 'providers' : quota,
+          evidence, sources: [series.source] })
   } catch {
     return json({ error: 'Chart assistant temporarily unavailable' }, 503)
   }

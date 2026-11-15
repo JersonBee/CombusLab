@@ -35,11 +35,11 @@ Downloads are per trial. The series links preserve the selected channel and time
 
 ## Chart assistant
 
-Open the assistant on a synchronized trial chart in Dashboard or Discover and sign in with a pilot account. The browser submits the active trial, channel, and time window. The Edge Function rereads the published series, calculates the summary, and asks the first available provider to choose verified observations. An alternate-channel suggestion requires available readings and an explicit click to change the chart. If every provider fails, the assistant shows the calculated evidence summary.
+Open the assistant on a synchronized trial chart in Dashboard or Discover. The browser submits the active trial, channel, and time window without a user account. The Edge Function rereads the published series, calculates the summary, and asks the first available provider to choose verified observations. An alternate-channel suggestion requires available readings and an explicit click to change the chart.
 
 The frontend uses `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. The `chart-assistant` function uses `COMBUSLAB_ASSISTANT_ORIGINS` for allowed browser origins and `COMBUSLAB_EVIDENCE_ORIGIN` for the deployed scientific API. Groq, Cloudflare Workers AI, and Pollinations credentials stay in Supabase Edge Function secrets.
 
-Deploy changes to `supabase/functions/chart-assistant` to Supabase alongside the Vercel frontend release. A Git push that triggers Vercel does not publish the Edge Function.
+Apply the public assistant quota migration before deploying `supabase/functions/chart-assistant` with gateway JWT verification disabled. The service-only quota allows up to 12 AI requests per minute across visitors. The assistant returns the calculated evidence summary when the quota is exhausted or unavailable, or when all providers fail. Publish the Edge Function alongside the Vercel frontend release. A Git push that triggers Vercel does not publish the Edge Function.
 
 ## Testing and error monitoring
 
