@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "api": "node --env-file-if-exists=.env server/dev.mjs",
+    "api": "node --env-file-if-exists=../.env --env-file-if-exists=.env server/dev.mjs",
     "prepare": "node .husky/install.mjs",
     "test": "npm --prefix dashboard test"
   },
