@@ -1,0 +1,113 @@
+import { useId, useState } from 'react'
+import { Link } from 'react-router-dom'
+import type { ChartOptions } from 'chart.js'
+import { Line } from 'react-chartjs-2'
+import './Charts'
+import { ChartAssistant } from './ChartAssistant'
+import { RequestStatus, useReading } from './ScientificReading'
+
+const channels = [
+  { name: 'o2', label: 'Oxygen (O₂)', color: '#B7E4F9' },
+  { name: 'co2', label: 'Carbon dioxide (CO₂)', color: '#FEB352' },
+] as const
+
+type Channel = typeof channels[number]['name']
+type Series = {
+  rows: ({ time_s: number } & Record<Channel, number | null>)[]
+  units: { channel: string; unit: string }[]
+  source: { url: string | null; doi: string | null }
+  truncated: boolean
+}
+
+export function TrialSeries({ id, showAssistant = false }: { id: string; showAssistant?: boolean }) {
+  const errorId = useId()
+  const [draft, setDraft] = useState({ from_s: '0', to_s: '60' })
+  const [interval, setInterval] = useState(draft)
+  const [preferredChannel, setPreferredChannel] = useState<Channel>('o2')
+  const params = new URLSearchParams({ experiment_id: id, ...interval })
+  const series = useReading<Series>('/api/series?' + params)
+  const data = series.data
+  const available = channels.flatMap(channel => {
+    const unit = data?.units.find(item => item.channel === channel.name)?.unit
+    return unit && data?.rows.some(row => Number.isFinite(row[channel.name])) ? [{ ...channel, unit }] : []
+  })
+  const selected = available.find(channel => channel.name === preferredChannel) ?? available[0]
+  const duration = Number(draft.to_s) - Number(draft.from_s)
+  const invalidInterval = draft.from_s === '' || draft.to_s === '' ||
+    Number(draft.from_s) < 0 || !Number.isFinite(duration) || duration < 0 || duration > 60
+
+  return (
+    <section className="svg-subpanel min-w-0 space-y-4 p-4 md:p-5" aria-label="Synchronized measurements">
+      <h2 className="svg-section-heading">Synchronized measurements</h2>
+      <form className="flex flex-wrap items-end gap-3" onSubmit={event => {
+        event.preventDefault()
+        if (!invalidInterval) setInterval(draft)
+      }}>
+        <label className="flex flex-col">Channel
+          <select className="svg-input p-2" value={selected?.name ?? ''} disabled={!selected}
+            onChange={event => setPreferredChannel(event.target.value as Channel)}>
+            {!selected && <option value="">No channel available</option>}
+            {available.map(channel => <option key={channel.name} value={channel.name}>{channel.label}</option>)}
+          </select>
+        </label>
+        {(['from_s', 'to_s'] as const).map(field => (
+          <label key={field} className="flex flex-col">{field === 'from_s' ? 'From (s)' : 'To (s)'}
+            <input className="svg-input w-24 p-2" type="number" min="0" step="any" required
+              aria-describedby={errorId} value={draft[field]}
+              onChange={event => setDraft({ ...draft, [field]: event.target.value })} />
+          </label>
+        ))}
+        <button className="svg-input px-3 py-2" type="submit">Apply time window</button>
+      </form>
+      <p id={errorId} role={invalidInterval ? 'alert' : undefined}>Use an ascending time window of up to 60 seconds.</p>
+      {!data ? <RequestStatus {...series} /> : (
+        <>
+          {selected ? (
+            <SeriesChart label={selected.label} unit={selected.unit} color={selected.color}
+              points={data.rows.map(row => ({ x: row.time_s, y: row[selected.name] }))} />
+          ) : (
+            <p role="status">{data.rows.length ? 'No readings with documented units in this window.' : 'No measurements in this window.'}</p>
+          )}
+          <p>{data.rows.length.toLocaleString('en-US')} synchronized rows · {interval.from_s}–{interval.to_s} s from the first calibrated record.
+            {data.truncated && ' The response reached the row limit.'}</p>
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
+            {data.source.url && <a className="resource-link" href={data.source.url}>NASA PSI measurement source</a>}
+            {data.source.doi && <a className="resource-link" href={'https://doi.org/' + data.source.doi}>Dataset DOI</a>}
+            {selected && !data.truncated && <Link className="resource-link" to={'/data-lab?' + new URLSearchParams({
+              experiment_id: id, channel: selected.name, ...interval,
+            })}>Export in Data Lab</Link>}
+          </div>
+          {showAssistant && !data.truncated && available.length > 0 && (
+            <ChartAssistant key={params.toString()} id={id}
+              from={Number(interval.from_s)} to={Number(interval.to_s)} channels={available.map(channel => channel.name)} />
+          )}
+        </>
+      )}
+    </section>
+  )
+}
+
+function SeriesChart({ label, unit, color, points }: {
+  label: string; unit: string; color: string; points: { x: number; y: number | null }[]
+}) {
+  const options: ChartOptions<'line'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    parsing: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { type: 'linear', title: { display: true, text: 'Elapsed time (s)', color: '#F5EDE4' },
+        ticks: { color: '#D4CDD0' }, grid: { color: '#ffffff20' } },
+      y: { title: { display: true, text: label + ' (' + unit + ')', color: '#F5EDE4' },
+        ticks: { color: '#D4CDD0' }, grid: { color: '#ffffff20' } },
+    },
+  }
+  return (
+    <div className="h-[320px] min-w-0 md:h-[380px]">
+      <Line role="img" aria-label={label + ' concentration over elapsed time'} options={options}
+        data={{ datasets: [{ label: label + ' (' + unit + ')', data: points, borderColor: color,
+          pointRadius: points.filter(point => point.y !== null).length === 1 ? 4 : 0,
+          pointHitRadius: 5, spanGaps: false }] }} />
+    </div>
+  )
+}

@@ -25,5 +25,5 @@ export function useEvidence() {
 }
 
 export function StudyLink({ study }: { study: Study }) {
-  return <Link className="underline" to={'/research?' + new URLSearchParams({ investigation_id: study.investigation_id })}>{study.study_name}</Link>
+  return <Link className="underline" to={'/discover?' + new URLSearchParams({ investigation_id: study.investigation_id })}>{study.study_name}</Link>
 }

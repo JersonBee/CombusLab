@@ -1,22 +1,29 @@
 import { useEffect, useState } from 'react'
-import { BrowserRouter, NavLink, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import { BrowserRouter, NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { ChevronLeft } from 'lucide-react'
 import logoSvg from './assets/logo.svg'
 import assistantIcon from './assets/chart-assistant.svg'
 import { Ranking } from './pages/Ranking'
-import { Research } from './pages/Research'
+import { Dashboard } from './pages/Dashboard'
+import { Discover } from './pages/Research'
 import { Comparations } from './pages/Comparations'
-import { Data } from './pages/Data'
+import { DataLab } from './pages/Data'
 import { ResourceDetail, Resources } from './pages/Resources'
 
 const NAV_ITEMS = [
+  { to: '/', label: 'Dashboard' },
+  { to: '/discover', label: 'Discover' },
   { to: '/ranking', label: 'Ranking' },
-  { to: '/research', label: 'Research' },
-  { to: '/comparations', label: 'Comparations' },
-  { to: '/data', label: 'Data' },
+  { to: '/comparations', label: 'Compare' },
+  { to: '/data-lab', label: 'Data Lab' },
   { to: '/resources', label: 'Resources' },
 ]
 const desktopNavigation = '(min-width: 1024px)'
+
+function LegacyRoute({ to }: { to: string }) {
+  const { search, hash } = useLocation()
+  return <Navigate to={{ pathname: to, search, hash }} replace />
+}
 
 function Shell() {
   const [menuOpen, setMenuOpen] = useState(() => window.matchMedia(desktopNavigation).matches)
@@ -35,7 +42,7 @@ function Shell() {
       panel.focus()
       return
     }
-    navigate('/research?coverage=series')
+    navigate('/discover?coverage=series')
   }
 
   return (
@@ -59,6 +66,7 @@ function Shell() {
             <NavLink
               key={to}
               to={to}
+              end={to === '/'}
               onClick={() => {
                 if (!window.matchMedia(desktopNavigation).matches) setMenuOpen(false)
               }}
@@ -73,14 +81,16 @@ function Shell() {
       <main className="dashboard-main">
         <div className="max-w-[1060px] mx-auto">
           <Routes>
-            <Route path="/" element={<Navigate to="/ranking" replace />} />
+            <Route path="/" element={<Dashboard />} />
             <Route path="/ranking" element={<Ranking />} />
-            <Route path="/research" element={<Research />} />
+            <Route path="/discover" element={<Discover />} />
+            <Route path="/research" element={<LegacyRoute to="/discover" />} />
             <Route path="/comparations" element={<Comparations />} />
-            <Route path="/data" element={<Data />} />
+            <Route path="/data-lab" element={<DataLab />} />
+            <Route path="/data" element={<LegacyRoute to="/data-lab" />} />
             <Route path="/resources" element={<Resources />} />
             <Route path="/resources/:investigationId" element={<ResourceDetail />} />
-            <Route path="*" element={<Navigate to="/ranking" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
       </main>

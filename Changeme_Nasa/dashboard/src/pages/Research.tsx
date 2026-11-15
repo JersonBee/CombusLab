@@ -1,18 +1,11 @@
-import { useState } from 'react'
-import { useLocation, useSearchParams } from 'react-router-dom'
-import { Line } from 'react-chartjs-2'
-import type { ChartOptions } from 'chart.js'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { DynamicBarChart } from '../components/Charts'
 import { useReading, RequestStatus } from '../components/ScientificReading'
-import { ChartAssistant } from '../components/ChartAssistant'
+import { TrialSeries } from '../components/TrialSeries'
 import { useEvidence } from '../components/StudyInventory'
-import { DownloadLinks, EvidenceLinks } from '../components/EvidenceLinks'
+import { EvidenceLinks } from '../components/EvidenceLinks'
 import { hasSensor, materialMatches, matchesResult, objectives, researchContext, resultTypes, sensors, type Objective } from '../scientificEvidence'
-
-const channels = [
-  { name: 'o2', label: 'O₂', color: '#B7E4F9' },
-  { name: 'co2', label: 'CO₂', color: '#FEB352' },
-] as const
 
 type Condition = {
   field: string
@@ -37,77 +30,6 @@ type Detail = {
   }
   conditions: Condition[]
 }
-type Series = {
-  rows: { epoch_ms: string; time_s: number; o2: number | null; co2: number | null }[]
-  units: { channel: string; unit: string }[]
-  source: { url: string | null }
-  truncated: boolean
-}
-
-const chartOptions: ChartOptions<'line'> = {
-  responsive: true,
-  maintainAspectRatio: false,
-  parsing: false,
-  scales: {
-    x: { type: 'linear', title: { display: true, text: 'Elapsed time (s)' } },
-    y: { title: { display: true, text: 'Concentration (%)' } },
-  },
-}
-
-function TimeSeries({ id }: { id: string }) {
-  const [window, setWindow] = useState({ from: '0', to: '60' })
-  const [selection, setSelection] = useState(window)
-  const params = new URLSearchParams({ experiment_id: id, from_s: selection.from, to_s: selection.to })
-  const series = useReading<Series>('/api/series?' + params)
-  const data = series.data
-  const explainable = channels.filter(({ name }) =>
-    data?.units.some(({ channel, unit }) => channel === name && unit) &&
-    data.rows.some((row) => row[name] !== null)
-  ).map(({ name }) => name)
-  return (
-    <section className="svg-subpanel p-5 space-y-4" aria-label="Synchronized measurements">
-      <h3 className="svg-section-heading">Synchronized measurements</h3>
-      <form className="flex flex-wrap items-end gap-3" onSubmit={(event) => {
-        event.preventDefault()
-        setSelection(window)
-      }}>
-        <label>From (s) <input className="svg-input w-24 p-1" type="number" min="0" step="any" required value={window.from} onChange={(e) => setWindow({ ...window, from: e.target.value })} /></label>
-        <label>To (s) <input className="svg-input w-24 p-1" type="number" min="0" step="any" required value={window.to} onChange={(e) => setWindow({ ...window, to: e.target.value })} /></label>
-        <button className="svg-input px-3 py-1">Load window</button>
-      </form>
-      <p>Choose a window of up to 60 seconds.</p>
-      {!data ? <RequestStatus {...series} /> : data.rows.length === 0 ? (
-        <p role="status">No measurements in this window.</p>
-      ) : (
-        <>
-          <p role="status">{data.rows.length.toLocaleString()} synchronized rows, {selection.from}–{selection.to} s.{data.truncated && ' The response reached the row limit.'}</p>
-          {explainable.length ? (
-            <div className="grid gap-4 xl:grid-cols-2">
-              {channels.filter(({ name }) => explainable.includes(name)).map(({ name, label, color }) => (
-                <div className="h-72 min-w-0" key={name}>
-                  <Line aria-label={label + ' concentration over elapsed time'} role="img" options={chartOptions} data={{
-                    datasets: [{
-                      label: label + ' (%)',
-                      data: data.rows.map((row) => ({ x: row.time_s, y: row[name] })),
-                      borderColor: color, pointRadius: 0, pointHitRadius: 5, spanGaps: false,
-                    }],
-                  }} />
-                </div>
-              ))}
-            </div>
-          ) : <p>No O₂ or CO₂ readings in this window.</p>}
-          {data.source.url && <a className="underline" href={data.source.url}>NASA PSI measurement source</a>}
-          {!data.truncated && explainable.map(channel => <DownloadLinks key={channel} id={id}
-            selection={{ channel, from_s: selection.from, to_s: selection.to }} />)}
-          {!data.truncated && explainable.length > 0 &&
-            <ChartAssistant key={params.toString()} id={id}
-              from={Number(selection.from)} to={Number(selection.to)} channels={explainable} />}
-        </>
-      )}
-    </section>
-  )
-}
-
 function TrialDetail({ id }: { id: string }) {
   const detail = useReading<Detail>('/api/experiment?' + new URLSearchParams({ experiment_id: id }))
   if (!detail.data) return <RequestStatus {...detail} />
@@ -132,6 +54,7 @@ function TrialDetail({ id }: { id: string }) {
       <p>{experiment.source_url && <a className="underline" href={experiment.source_url}>NASA PSI source</a>}
         {experiment.source_doi && <> · DOI <code>{experiment.source_doi}</code></>}
         {experiment.repository_version && <> · Version {experiment.repository_version}</>}</p>
+      <p>Synchronized rows · SAFFIRE: {Number(experiment.saffire_filas).toLocaleString('en-US')} · Cygnus: {Number(experiment.cygnus_filas).toLocaleString('en-US')}</p>
       {conditions.length > 0 && (
         <div className="overflow-x-auto">
           <table className="w-full text-left">
@@ -151,8 +74,10 @@ function TrialDetail({ id }: { id: string }) {
           </table>
         </div>
       )}
-      {conditions.length > 0 && <><ConditionCharts conditions={conditions} /><DownloadLinks id={id} /></>}
-      {Number(experiment.saffire_filas) + Number(experiment.cygnus_filas) > 0 ? <TimeSeries id={id} /> : (
+      {conditions.length > 0 && <ConditionCharts conditions={conditions} />}
+      {conditions.length > 0 && <Link className="resource-link"
+        to={'/data-lab?' + new URLSearchParams({ experiment_id: id })}>Export conditions in Data Lab</Link>}
+      {Number(experiment.saffire_filas) + Number(experiment.cygnus_filas) > 0 ? <TrialSeries id={id} showAssistant /> : (
         <p>{conditions.length ? 'Test conditions are available in the table above.' : 'This catalog entry provides trial identification and provenance.'} Synchronized measurements are unavailable for this trial.</p>
       )}
     </section>
@@ -177,22 +102,23 @@ function ConditionCharts({ conditions }: { conditions: Condition[] }) {
 const emptyFilters = { q: '', material: '', objective: '', sensor: '', investigation_id: '', flow_min: '', flow_max: '', direction: '', coverage: '' }
 const pageSize = 20
 
-export function Research() {
+export function Discover() {
   const [params] = useSearchParams()
   const { key } = useLocation()
-  return <ResearchCatalog key={key}
+  return <DiscoverCatalog key={key}
     investigation={params.get('investigation_id') ?? ''}
     experiment={params.get('experiment_id') ?? ''}
     coverage={Object.keys(resultTypes).includes(params.get('coverage') ?? '') ? params.get('coverage')! : ''} />
 }
 
-function ResearchCatalog({ investigation, experiment, coverage }: {
+function DiscoverCatalog({ investigation, experiment, coverage }: {
   investigation: string; experiment: string; coverage: string
 }) {
   const [draft, setDraft] = useState({ ...emptyFilters, investigation_id: investigation, coverage })
   const [filters, setFilters] = useState(draft)
   const [page, setPage] = useState(1)
   const [trialId, setTrialId] = useState(experiment)
+  const selectedTrial = useRef<HTMLDivElement>(null)
   const catalog = useEvidence()
   const records = catalog.data?.rows ?? []
   const directions = [...new Set(records.flatMap(record => record.flow_direction ? [record.flow_direction] : []))].sort()
@@ -210,9 +136,13 @@ function ResearchCatalog({ investigation, experiment, coverage }: {
       matchesResult(row, filters.coverage)
   })
   const invalidFlow = Boolean(draft.flow_min && draft.flow_max && Number(draft.flow_min) > Number(draft.flow_max))
+  useEffect(() => {
+    selectedTrial.current?.focus()
+  }, [trialId])
+
   return (
     <div className="space-y-6">
-      <h1 className="svg-page-title text-center">Research</h1>
+      <h1 className="svg-page-title">Discover</h1>
       {experiment && trialId === experiment && <TrialDetail key={trialId} id={trialId} />}
       <section className="svg-black-panel p-6 md:p-10 space-y-5">
         <form className="flex flex-wrap gap-3 items-end" onSubmit={(event) => {
@@ -288,7 +218,11 @@ function ResearchCatalog({ investigation, experiment, coverage }: {
           </>
         )}
       </section>
-      {trialId && trialId !== experiment && <TrialDetail key={trialId} id={trialId} />}
+      {trialId && trialId !== experiment && (
+        <div ref={selectedTrial} tabIndex={-1} aria-label="Selected trial">
+          <TrialDetail key={trialId} id={trialId} />
+        </div>
+      )}
     </div>
   )
 }

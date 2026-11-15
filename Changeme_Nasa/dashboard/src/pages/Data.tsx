@@ -16,9 +16,17 @@ const features = [
   ['burn_duration_s', 'Burn duration', 's', 'Candidate outcome'],
 ] as const
 
-function ModelData({ trial }: { trial: Evidence }) {
-  const [channel, setChannel] = useState(trial.series_channels[0] ?? 'o2')
-  const [window, setWindow] = useState({ from_s: '0', to_s: '60' })
+function ModelData({ trial, params }: { trial: Evidence; params: URLSearchParams }) {
+  const requestedChannel = params.get('channel')
+  const [channel, setChannel] = useState(() =>
+    trial.series_channels.find(value => value === requestedChannel) ?? trial.series_channels[0] ?? 'o2')
+  const [window, setWindow] = useState(() => {
+    const from = params.get('from_s')
+    const to = params.get('to_s')
+    return from?.trim() && to?.trim() && Number.isFinite(Number(from)) && Number.isFinite(Number(to)) &&
+      Number(from) >= 0 && Number(to) >= Number(from) && Number(to) - Number(from) <= 60
+      ? { from_s: from, to_s: to } : { from_s: '0', to_s: '60' }
+  })
   const [selection, setSelection] = useState({ channel, ...window })
   const invalidWindow = Number(window.to_s) < Number(window.from_s) || Number(window.to_s) - Number(window.from_s) > 60
   return (
@@ -72,7 +80,7 @@ function ModelData({ trial }: { trial: Evidence }) {
   )
 }
 
-export function Data() {
+export function DataLab() {
   const evidence = useEvidence()
   const [params, setParams] = useSearchParams()
   const [study, setStudy] = useState('')
@@ -86,11 +94,10 @@ export function Data() {
 
   return (
     <div className="space-y-6">
-      <h1 className="svg-page-title text-center">Data for predictive models</h1>
+      <h1 className="svg-page-title">Data Lab</h1>
       <section className="svg-black-panel p-6 md:p-10 space-y-4">
-        <h2 className="svg-section-heading">Identify inputs, measurements and outcomes</h2>
-        <p>Select a NASA trial to check coverage and units before preparing a flammability or fire-scenario model.
-          Separate trials by experiment when building validation splits. Total pressure and trial-level gravity measurements are unavailable in this catalog.</p>
+        <h2 className="svg-section-heading">Trial data and exports</h2>
+        <p>Select a NASA trial to inspect available variables and download its measurements or reported conditions.</p>
         {!evidence.data ? <RequestStatus {...evidence} /> : (
           <>
             <div className="flex flex-wrap gap-3 items-end">
@@ -120,7 +127,7 @@ export function Data() {
                 </option>)}
               </select>
             </label>
-            {trial ? <ModelData key={trial.experiment_id} trial={trial} /> : params.has('experiment_id') && <p role="status">Trial not found.</p>}
+            {trial ? <ModelData key={params.toString()} trial={trial} params={params} /> : params.has('experiment_id') && <p role="status">Trial not found.</p>}
           </>
         )}
       </section>

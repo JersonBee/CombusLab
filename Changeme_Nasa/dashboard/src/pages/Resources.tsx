@@ -99,7 +99,7 @@ function Investigation({ study }: { study: Study }) {
             <ul className="grid gap-3 sm:grid-cols-2">
               {catalog.data.rows.map(trial => (
                 <li className="svg-subpanel p-4 space-y-1" key={trial.experiment_id}>
-                  <Link className="resource-link" to={'/research?' + new URLSearchParams({
+                  <Link className="resource-link" to={'/discover?' + new URLSearchParams({
                     investigation_id: study.investigation_id,
                     experiment_id: trial.experiment_id,
                   })}><code>{trial.experiment_id}</code></Link>

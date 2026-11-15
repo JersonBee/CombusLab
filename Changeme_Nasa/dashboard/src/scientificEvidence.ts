@@ -110,7 +110,7 @@ export function matchesResult(trial: Trial, result: string) {
 }
 
 export function trialPath(trial: Pick<Trial, 'experiment_id' | 'investigation_id'>) {
-  return '/research?' + new URLSearchParams({
+  return '/discover?' + new URLSearchParams({
     investigation_id: trial.investigation_id, experiment_id: trial.experiment_id,
   })
 }
