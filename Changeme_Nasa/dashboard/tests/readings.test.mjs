@@ -65,6 +65,40 @@ describe('scientific API', () => {
     expect(response.body).toContain('"10","0","o2",,"%",,"8"\r\n')
   })
 
+  it('returns synchronized readings with their units, source and time reference', async () => {
+    const source_url = 'https://psi.nasa.gov/physci/repo/data/investigations/PSI-100'
+    const rows = [{ epoch_ms: '1000', time_s: 2.5, o2: null, co2: 0.04 }]
+    const units = [{ channel: 'co2', unit: '%' }]
+    const query = vi.fn()
+      .mockResolvedValueOnce({ rows: [{ investigation_id: 'PSI-100', source_test_id: 'S1', source_url }] })
+      .mockResolvedValueOnce({ rows: units })
+      .mockResolvedValueOnce({ rows })
+    readSnapshot.mockImplementation(operation => operation({ query }))
+
+    const response = await request('series', 'experiment_id=PSI-100%3AS1%3Ar2&from_s=2&to_s=5')
+
+    expect(response.status).toBe(200)
+    expect(JSON.parse(response.body)).toMatchObject({
+      experiment_id: 'PSI-100:S1:r2', from_s: 2, to_s: 5, units, rows,
+      source: { url: source_url }, time_unit: 's', time_reference: 'first_calibrated_record', truncated: false,
+    })
+    expect(query.mock.calls[2][1]).toEqual(['PSI-100:S1:r2', 2, 5, 5001])
+  })
+
+  it('preserves BASS-II conditions and qualifiers for Discover', async () => {
+    const experiment = { investigation_id: 'PSI-25', study_name: 'BASS-II', saffire_filas: 0, cygnus_filas: 0 }
+    const conditions = [{ field: 'oxygen', value: null, upper_bound: 21, unit: '%', qualifier: '<' }]
+    const query = vi.fn()
+      .mockResolvedValueOnce({ rows: [experiment] })
+      .mockResolvedValueOnce({ rows: conditions })
+    readSnapshot.mockImplementation(operation => operation({ query }))
+
+    const response = await request('experiment', 'experiment_id=PSI-25%3AB10%3Ar11')
+
+    expect(response.status).toBe(200)
+    expect(JSON.parse(response.body)).toMatchObject({ experiment, conditions })
+  })
+
   it('reports server errors and returns a generic 503', async () => {
     const error = Object.assign(new Error('private connection detail'), { code: 'ECONNRESET' })
     readSnapshot.mockRejectedValue(error)

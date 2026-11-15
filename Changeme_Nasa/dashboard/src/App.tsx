@@ -8,14 +8,16 @@ import { Dashboard } from './pages/Dashboard'
 import { Discover } from './pages/Research'
 import { Comparations } from './pages/Comparations'
 import { DataLab } from './pages/Data'
+import { SafetyInsights } from './pages/SafetyInsights'
 import { ResourceDetail, Resources } from './pages/Resources'
 
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard' },
   { to: '/discover', label: 'Discover' },
   { to: '/ranking', label: 'Ranking' },
-  { to: '/comparations', label: 'Compare' },
+  { to: '/compare', label: 'Compare' },
   { to: '/data-lab', label: 'Data Lab' },
+  { to: '/safety-insights', label: 'Safety Insights' },
   { to: '/resources', label: 'Resources' },
 ]
 const desktopNavigation = '(min-width: 1024px)'
@@ -85,8 +87,10 @@ function Shell() {
             <Route path="/ranking" element={<Ranking />} />
             <Route path="/discover" element={<Discover />} />
             <Route path="/research" element={<LegacyRoute to="/discover" />} />
-            <Route path="/comparations" element={<Comparations />} />
+            <Route path="/compare" element={<Comparations />} />
+            <Route path="/comparations" element={<LegacyRoute to="/compare" />} />
             <Route path="/data-lab" element={<DataLab />} />
+            <Route path="/safety-insights" element={<SafetyInsights />} />
             <Route path="/data" element={<LegacyRoute to="/data-lab" />} />
             <Route path="/resources" element={<Resources />} />
             <Route path="/resources/:investigationId" element={<ResourceDetail />} />

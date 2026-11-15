@@ -2,6 +2,10 @@ import { useState } from 'react'
 import { Line } from 'react-chartjs-2'
 import '../components/Charts'
 import { RequestStatus, useReading } from '../components/ScientificReading'
+import { DownloadLinks } from '../components/EvidenceLinks'
+import { defaultSeriesWindow, isSeriesWindowValid } from '../seriesSelection'
+import { channelUnit, compareConditions, hasChannelReadings, overlayLimitation,
+  type Channel, type ComparisonConditions, type ComparisonSeries } from '../trialComparison'
 
 type Trial = {
   experiment_id: string
@@ -11,29 +15,17 @@ type Trial = {
   has_conditions: boolean
 }
 type TrialDetails = {
-  experiment: {
+  experiment: ComparisonConditions & {
     source_url: string | null
     source_doi: string | null
-    air_velocity_cm_s: number | null
-    length_mm: number | null
-    width_mm: number | null
-    thickness_mm: number | null
   }
   conditions: {
     field: string; value: number | null; unit: string | null; status: string | null
     lower_bound: number | null; upper_bound: number | null; qualifier: string | null
   }[]
 }
-type Channel = 'o2' | 'co2'
-type Series = {
-  units: { channel: string; unit: string }[]
-  time_reference: string
-  time_unit: string
-  truncated: boolean
-  rows: { time_s: number; o2: number | null; co2: number | null }[]
-}
 type Selection = { channel: Channel; from_s: string; to_s: string }
-const initialSelection: Selection = { channel: 'o2', from_s: '0', to_s: '60' }
+const initialSelection: Selection = { channel: 'o2', ...defaultSeriesWindow }
 
 function TrialPicker({ label, trial, onSelect }: { label: string; trial?: Trial; onSelect: (row: Trial) => void }) {
   const [input, setInput] = useState('')
@@ -77,34 +69,17 @@ function TrialPicker({ label, trial, onSelect }: { label: string; trial?: Trial;
   )
 }
 
-function DownloadLinks({ id, selection }: { id: string; selection?: Selection }) {
-  const search = { experiment_id: id, mode: selection ? 'series' : 'conditions', ...selection }
-  return (
-    <p className="flex gap-3">
-      {['csv', 'json'].map((format) => (
-        <a key={format} className="underline" href={'/api/export?' + new URLSearchParams({ ...search, format })} download>
-          Download {selection ? 'channel' : 'conditions'} ({format.toUpperCase()})
-        </a>
-      ))}
-    </p>
-  )
+function useTrialDetails(trial: Trial) {
+  return useReading<TrialDetails>('/api/experiment?' + new URLSearchParams({ experiment_id: trial.experiment_id }))
 }
 
-function TrialCard({ trial }: { trial: Trial }) {
-  const detail = useReading<TrialDetails>('/api/experiment?' + new URLSearchParams({ experiment_id: trial.experiment_id }))
+function TrialCard({ trial, detail }: { trial: Trial; detail: ReturnType<typeof useTrialDetails> }) {
   const record = detail.data
   return (
     <article className="svg-subpanel p-4 space-y-3">
       <h3 className="svg-section-heading">{trial.study_name} · {trial.experiment_id}</h3>
       {!record ? <RequestStatus {...detail} /> : (
         <>
-          <dl className="grid grid-cols-2 gap-2">
-            {([
-              ['Material', trial.material_original], ['Airflow (cm/s)', record.experiment.air_velocity_cm_s],
-              ['Length (mm)', record.experiment.length_mm], ['Width (mm)', record.experiment.width_mm],
-              ['Thickness (mm)', record.experiment.thickness_mm],
-            ] as const).map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value ?? 'Not recorded'}</dd></div>)}
-          </dl>
           {record.experiment.source_url && <a className="underline" href={record.experiment.source_url}>NASA PSI source</a>}
           {record.experiment.source_doi && <p>DOI {record.experiment.source_doi}</p>}
           {record.conditions.length > 0 && (
@@ -135,27 +110,19 @@ function SeriesComparison({ left, right }: { left: Trial; right: Trial }) {
   const query = (trial: Trial) => '/api/series?' + new URLSearchParams({
     experiment_id: trial.experiment_id, from_s: selection.from_s, to_s: selection.to_s,
   })
-  const a = useReading<Series>(query(left))
-  const b = useReading<Series>(query(right))
+  const a = useReading<ComparisonSeries>(query(left))
+  const b = useReading<ComparisonSeries>(query(right))
   const seriesA = a.data
   const seriesB = b.data
-  const unit = (data: Series) => data.units.find((item) => item.channel === selection.channel)?.unit
-  const hasReadings = (data: Series) => data.rows.some((row) => row[selection.channel] !== null)
   const pairs = [{ trial: left, result: a }, { trial: right, result: b }]
-  const reason = seriesA && seriesB && (
-    !hasReadings(seriesA) || !hasReadings(seriesB) ? 'The selected channel has no readings for one or both trials in this window.'
-    : !unit(seriesA) || unit(seriesA) !== unit(seriesB) ? 'The units are missing or differ for this channel.'
-    : seriesA.time_reference !== 'first_calibrated_record' || seriesB.time_reference !== seriesA.time_reference ||
-      seriesA.time_unit !== 's' || seriesB.time_unit !== 's' ? 'The time references are incompatible.'
-    : seriesA.truncated || seriesB.truncated ? 'Choose a smaller window to compare both series completely.'
-    : ''
-  )
+  const reason = seriesA && seriesB && overlayLimitation(seriesA, seriesB, selection.channel)
+  const invalidWindow = !isSeriesWindowValid(draft)
   return (
     <section className="svg-subpanel p-4 space-y-4">
       <h2 className="svg-section-heading">Compare synchronized series</h2>
       <form className="flex flex-wrap gap-3 items-end" onSubmit={(event) => {
         event.preventDefault()
-        setSelection(draft)
+        if (!invalidWindow) setSelection(draft)
       }}>
         <label className="flex flex-col">Channel
           <select className="svg-input p-2" value={draft.channel} onChange={(e) => setDraft({ ...draft, channel: e.target.value as Channel })}>
@@ -169,16 +136,17 @@ function SeriesComparison({ left, right }: { left: Trial; right: Trial }) {
         ))}
         <button className="svg-input p-2">Load window</button>
       </form>
+      {invalidWindow && <p role="alert">Use an ascending time window of up to 60 seconds.</p>}
       <p>Windows cover up to 60 seconds. Time zero is the first calibrated record of each trial. Review material, geometry and airflow before interpreting differences.</p>
       {pairs.map(({ trial, result }) => !result.data && <RequestStatus key={trial.experiment_id} {...result} />)}
-      {reason && <p role="status">{reason}</p>}
+      {reason && <p role="status">Overlay unavailable. {reason}</p>}
       {seriesA && seriesB && reason === '' && (
         <div className="h-80">
           <Line role="img" aria-label="Comparison of synchronized trial measurements" options={{
             responsive: true, maintainAspectRatio: false, parsing: false,
             scales: {
               x: { type: 'linear', title: { display: true, text: 'Elapsed time (s)' } },
-              y: { title: { display: true, text: (selection.channel === 'o2' ? 'O₂' : 'CO₂') + ' (' + unit(seriesA) + ')' } },
+              y: { title: { display: true, text: (selection.channel === 'o2' ? 'O₂' : 'CO₂') + ' (' + channelUnit(seriesA, selection.channel) + ')' } },
             },
           }} data={{ datasets: [seriesA, seriesB].map((series, index) => ({
             label: index === 0 ? left.experiment_id : right.experiment_id,
@@ -189,12 +157,51 @@ function SeriesComparison({ left, right }: { left: Trial; right: Trial }) {
           })) }} />
         </div>
       )}
-      {pairs.map(({ trial, result }) => result.data && hasReadings(result.data) && !result.data.truncated && (
+      {pairs.map(({ trial, result }) => result.data && channelUnit(result.data, selection.channel) &&
+        hasChannelReadings(result.data, selection.channel) && !result.data.truncated && (
         <div key={trial.experiment_id}><p>{trial.experiment_id} · {result.data.rows.length.toLocaleString()} rows</p>
           <DownloadLinks id={trial.experiment_id} selection={selection} />
         </div>
       ))}
     </section>
+  )
+}
+
+function SelectedComparison({ left, right }: { left: Trial; right: Trial }) {
+  const a = useTrialDetails(left)
+  const b = useTrialDetails(right)
+  const rows = a.data && b.data ? compareConditions(a.data.experiment, b.data.experiment) : null
+  return (
+    <>
+      {rows && (
+        <section className="svg-subpanel space-y-3 p-4">
+          <h2 className="svg-section-heading">Experimental conditions side by side</h2>
+          <p>Matches reflect the recorded values and study context. Differences and missing values limit how the trials can be interpreted together.</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <caption className="sr-only">Comparison of experimental conditions</caption>
+              <thead><tr>{['Condition', left.experiment_id, right.experiment_id, 'Assessment'].map(label =>
+                <th scope="col" className="p-2" key={label}>{label}</th>)}</tr></thead>
+              <tbody>{rows.map(row => (
+                <tr key={row.label}><th scope="row" className="p-2">{row.label}</th>
+                  <td className="p-2">{row.left ?? 'Not recorded'}</td>
+                  <td className="p-2">{row.right ?? 'Not recorded'}</td>
+                  <td className="p-2">{row.status}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        </section>
+      )}
+      {left.has_series && right.has_series ? <SeriesComparison left={left} right={right} /> : (
+        <p role="status">Overlay unavailable. A time-series overlay requires synchronized measurements from both trials.
+          The trial records provide the available conditions for a side-by-side comparison.</p>
+      )}
+      <div className="grid gap-4 md:grid-cols-2">
+        <TrialCard trial={left} detail={a} />
+        <TrialCard trial={right} detail={b} />
+      </div>
+    </>
   )
 }
 
@@ -209,15 +216,7 @@ export function Comparations() {
         <TrialPicker label="Trial B" trial={right} onSelect={setRight} />
       </div>
       {left && right && (left.experiment_id === right.experiment_id ? <p role="status">Select two distinct trials.</p> : (
-        <>
-          <div className="grid gap-4 md:grid-cols-2">
-            <TrialCard key={left.experiment_id} trial={left} />
-            <TrialCard key={right.experiment_id} trial={right} />
-          </div>
-          {left.has_series && right.has_series ? (
-            <SeriesComparison key={left.experiment_id + '/' + right.experiment_id} left={left} right={right} />
-          ) : <p role="status">A time-series overlay requires synchronized measurements for both trials. Use the trial records to compare the available conditions.</p>}
-        </>
+        <SelectedComparison key={JSON.stringify([left.experiment_id, right.experiment_id])} left={left} right={right} />
       ))}
     </div>
   )

@@ -124,7 +124,8 @@ export type Scenario = {
   objective: Objective | ''
 }
 
-type Match = 'match' | 'different' | 'missing'
+export type Match = 'match' | 'different' | 'missing'
+export const statusLabels = { match: 'Match', different: 'Different', missing: 'Unavailable' }
 type Criterion = { label: string; status: Match; evidence: string }
 
 export function rankTrial(trial: Evidence, scenario: Scenario) {
@@ -156,4 +157,35 @@ export function rankTrial(trial: Evidence, scenario: Scenario) {
   }
   const matches = criteria.filter(criterion => criterion.status === 'match').length
   return { trial, criteria, matches, score: criteria.length ? Math.round(matches / criteria.length * 100) : 0 }
+}
+
+export function rankStudies(trials: readonly Evidence[], scenario: Scenario) {
+  const groups = new Map<string, ReturnType<typeof rankTrial>[]>()
+  for (const trial of trials) {
+    const results = groups.get(trial.investigation_id) ?? []
+    results.push(rankTrial(trial, scenario))
+    groups.set(trial.investigation_id, results)
+  }
+  return [...groups].map(([id, results]) => {
+    const quantitative = ({ trial }: ReturnType<typeof rankTrial>) => trial.has_series || trial.has_conditions
+    const best = results.sort((a, b) => b.matches - a.matches ||
+      Number(quantitative(b)) - Number(quantitative(a)) ||
+      a.trial.experiment_id.localeCompare(b.trial.experiment_id, 'en'))[0]
+    return { id, best, study: best.trial.study_name, score: best.score,
+      matching: results.filter(result => result.matches > 0).length,
+      fullMatches: results.filter(result => result.matches > 0 && result.matches === result.criteria.length).length,
+      quantitative: results.filter(quantitative).length }
+  }).sort((a, b) => b.score - a.score || a.study.localeCompare(b.study, 'en') || a.id.localeCompare(b.id, 'en'))
+}
+
+export function summarizeScenario(trials: readonly Evidence[], scenario: Scenario) {
+  const criteria = new Map<string, { match: number; different: number; missing: number }>()
+  for (const trial of trials) {
+    for (const { label, status } of rankTrial(trial, scenario).criteria) {
+      const counts = criteria.get(label) ?? { match: 0, different: 0, missing: 0 }
+      counts[status]++
+      criteria.set(label, counts)
+    }
+  }
+  return [...criteria].map(([label, counts]) => ({ label, ...counts }))
 }

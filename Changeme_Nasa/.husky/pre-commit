@@ -1,1 +1,2 @@
-npm --prefix Changeme_Nasa test
+cd Changeme_Nasa/dashboard || exit 1
+node node_modules/vitest/vitest.mjs run

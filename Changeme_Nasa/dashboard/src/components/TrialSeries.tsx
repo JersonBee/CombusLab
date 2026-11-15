@@ -5,6 +5,7 @@ import { Line } from 'react-chartjs-2'
 import './Charts'
 import { ChartAssistant } from './ChartAssistant'
 import { RequestStatus, useReading } from './ScientificReading'
+import { defaultSeriesWindow, isSeriesWindowValid } from '../seriesSelection'
 
 const channels = [
   { name: 'o2', label: 'Oxygen (O₂)', color: '#B7E4F9' },
@@ -21,7 +22,7 @@ type Series = {
 
 export function TrialSeries({ id, showAssistant = false }: { id: string; showAssistant?: boolean }) {
   const errorId = useId()
-  const [draft, setDraft] = useState({ from_s: '0', to_s: '60' })
+  const [draft, setDraft] = useState(defaultSeriesWindow)
   const [interval, setInterval] = useState(draft)
   const [preferredChannel, setPreferredChannel] = useState<Channel>('o2')
   const params = new URLSearchParams({ experiment_id: id, ...interval })
@@ -32,9 +33,7 @@ export function TrialSeries({ id, showAssistant = false }: { id: string; showAss
     return unit && data?.rows.some(row => Number.isFinite(row[channel.name])) ? [{ ...channel, unit }] : []
   })
   const selected = available.find(channel => channel.name === preferredChannel) ?? available[0]
-  const duration = Number(draft.to_s) - Number(draft.from_s)
-  const invalidInterval = draft.from_s === '' || draft.to_s === '' ||
-    Number(draft.from_s) < 0 || !Number.isFinite(duration) || duration < 0 || duration > 60
+  const invalidInterval = !isSeriesWindowValid(draft)
 
   return (
     <section className="svg-subpanel min-w-0 space-y-4 p-4 md:p-5" aria-label="Synchronized measurements">

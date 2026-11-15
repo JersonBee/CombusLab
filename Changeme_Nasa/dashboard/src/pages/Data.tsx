@@ -4,6 +4,7 @@ import { DownloadLinks, EvidenceLinks } from '../components/EvidenceLinks'
 import { RequestStatus } from '../components/ScientificReading'
 import { useEvidence } from '../components/StudyInventory'
 import { matchesResult, researchContext, resultTypes, type Evidence } from '../scientificEvidence'
+import { isSeriesWindowValid, readExportSelection } from '../seriesSelection'
 
 const features = [
   ['length_mm', 'Sample length', 'mm', 'Input'],
@@ -17,18 +18,11 @@ const features = [
 ] as const
 
 function ModelData({ trial, params }: { trial: Evidence; params: URLSearchParams }) {
-  const requestedChannel = params.get('channel')
-  const [channel, setChannel] = useState(() =>
-    trial.series_channels.find(value => value === requestedChannel) ?? trial.series_channels[0] ?? 'o2')
-  const [window, setWindow] = useState(() => {
-    const from = params.get('from_s')
-    const to = params.get('to_s')
-    return from?.trim() && to?.trim() && Number.isFinite(Number(from)) && Number.isFinite(Number(to)) &&
-      Number(from) >= 0 && Number(to) >= Number(from) && Number(to) - Number(from) <= 60
-      ? { from_s: from, to_s: to } : { from_s: '0', to_s: '60' }
-  })
+  const initialSelection = readExportSelection(params, trial.series_channels)
+  const [channel, setChannel] = useState(initialSelection.channel ?? 'o2')
+  const [window, setWindow] = useState(initialSelection.window)
   const [selection, setSelection] = useState({ channel, ...window })
-  const invalidWindow = Number(window.to_s) < Number(window.from_s) || Number(window.to_s) - Number(window.from_s) > 60
+  const invalidWindow = !isSeriesWindowValid(window)
   return (
     <section className="svg-subpanel p-4 space-y-4">
       <h2 className="svg-section-heading">{trial.study_name} · <code>{trial.experiment_id}</code></h2>
