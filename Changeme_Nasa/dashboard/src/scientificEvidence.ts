@@ -3,6 +3,7 @@ export const objectives = {
   ignition: 'Ignition',
   extinction: 'Extinction and suppression',
   materials: 'Material flammability',
+  soot: 'Soot formation',
 } as const
 
 export type Objective = keyof typeof objectives

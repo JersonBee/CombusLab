@@ -19,6 +19,7 @@ The API requires `COMBUSLAB_DB_HOST`, `COMBUSLAB_DB_USER`, `COMBUSLAB_DB_PASSWOR
 | Request | Response |
 |---|---|
 | `GET /api/catalog?view=inventory` | Per-investigation trial counts, quantitative coverage and NASA PSI sources. |
+| `GET /api/catalog?view=test-days&investigation_id=PSI-21` | Versioned CLD Flame counts by test day and test type, with the NASA PSI source and file checksum. |
 | `GET /api/catalog?investigation_id=PSI-25&page=1` | Up to 20 trial records with coverage flags. Optional filters are `q`, `flow_min` and `flow_max` in cm/s. |
 | `GET /api/experiment?experiment_id=PSI-25:B10:r11` | BASS-II trial metadata, PSI provenance and six tabular conditions. |
 | `GET /api/series?experiment_id=PSI-100:S1:r2&from_s=0&to_s=60` | 1,877 synchronized rows with O₂ and CO₂, units, provenance and time in seconds. |
@@ -26,6 +27,10 @@ The API requires `COMBUSLAB_DB_HOST`, `COMBUSLAB_DB_USER`, `COMBUSLAB_DB_PASSWOR
 | `GET /api/export?experiment_id=PSI-25:B10:r11&mode=conditions&format=json` | Experimental conditions with units, qualifiers, bounds and provenance. |
 
 The series endpoint accepts windows of up to 60 seconds, orders by epoch and has a maximum response of 5,000 rows. Its `truncated` property indicates when that limit is reached. PostgreSQL bigint values, including epoch milliseconds, are returned as decimal strings.
+
+### ACME source snapshot
+
+The bundled CLD Flame table comes from [NASA PSI-21](https://psi.nasa.gov/physci/repo/data/investigations/PSI-21). The original file is preserved under `datasets/acme/psi-21`. Run `python -m src.prepare_acme_cld` from the repository root to regenerate the API snapshot, or add `--check` to verify it. The importer verifies the NASA file version by checksum and converts the documented year/day-of-year codes to calendar dates. Daily flame counts are shown at investigation level and do not enter the integrated trial totals or time-series comparisons.
 
 ## Comparing and exporting
 

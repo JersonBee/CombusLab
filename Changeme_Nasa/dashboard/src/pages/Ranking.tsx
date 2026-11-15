@@ -4,6 +4,7 @@ import { EvidenceLinks } from '../components/EvidenceLinks'
 import { RequestStatus } from '../components/ScientificReading'
 import { useEvidence } from '../components/StudyInventory'
 import { ScenarioForm, scenarios } from '../components/ScenarioForm'
+import { CldFlameRelevance } from '../components/CldFlameEvidence'
 import { rankStudies, statusLabels, type Scenario } from '../scientificEvidence'
 
 export function Ranking() {
@@ -18,7 +19,8 @@ export function Ranking() {
       <section className="svg-black-panel p-6 md:p-10 space-y-5">
         <h2 className="svg-section-heading">Relevance to a fire-safety scenario</h2>
         <ScenarioForm onApply={setSelection} submitLabel="Rank studies" />
-        <p>Each selected criterion has equal weight. The score is the percentage that matched, including missing criteria in the denominator. Each study is represented by its highest-scoring trial. Tied trials with quantitative evidence are shown first, then ordered by trial ID. Scores represent scenario relevance.</p>
+        <p>Each selected criterion has equal weight. The score is the percentage that matched, including missing criteria in the denominator. Trial-level results represent each study by its highest-scoring trial. Tied trials with quantitative evidence are shown first, then ordered by trial ID. Scores represent scenario relevance.</p>
+        <CldFlameRelevance scenario={selection} />
         {!evidence.data ? <RequestStatus {...evidence} /> : studies.length === 0 ? <p>No trials available.</p> : (
           <>
             <div className="grid gap-3 xl:grid-cols-3">

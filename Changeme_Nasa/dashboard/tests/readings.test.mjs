@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createHash } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import { readSnapshot } from '../../server/db.mjs'
 import { reportReadFailure } from '../../server/monitoring.mjs'
 import { handleReading } from '../../server/readings.mjs'
@@ -36,6 +38,25 @@ describe('scientific API', () => {
     const response = await request('catalog', '', 'POST')
     expect(response.status).toBe(405)
     expect(response.headers.Allow).toBe('GET')
+  })
+
+  it('serves all archived CLD Flame test days with their source checksum without querying PostgreSQL', async () => {
+    const response = await request('catalog', 'view=test-days&investigation_id=PSI-21')
+    expect(response.status).toBe(200)
+    const { rows, source } = JSON.parse(response.body)
+    expect(rows).toHaveLength(32)
+    expect(new Set(rows.map(row => row.date)).size).toBe(32)
+    expect(rows[0]).toEqual({ date: '2017-11-15', test_type: 'Methane based test', flames_ignited: 10 })
+    expect(rows.at(-1)).toEqual({ date: '2021-03-03', test_type: 'Improved coflow tests', flames_ignited: 11 })
+    expect(rows.reduce((sum, row) => sum + row.flames_ignited, 0)).toBe(344)
+    const bytes = readFileSync(new URL('../../../datasets/acme/psi-21/' + source.filename, import.meta.url))
+    expect(createHash('sha256').update(bytes).digest('hex')).toBe(source.sha256)
+    expect(readSnapshot).not.toHaveBeenCalled()
+  })
+
+  it('returns 404 when a test-day table has not been integrated', async () => {
+    expect((await request('catalog', 'view=test-days&investigation_id=PSI-20')).status).toBe(404)
+    expect(readSnapshot).not.toHaveBeenCalled()
   })
 
   it('returns 404 for an unknown experiment', async () => {

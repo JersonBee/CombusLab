@@ -4,6 +4,7 @@ import { investigations, readCatalog, readEvidence, readInventory } from './modu
 import { findExperiment, readConditions } from './modules/experiments.mjs'
 import { channelNames, readSeries } from './modules/series.mjs'
 import { selectSeriesChannel, sendExport } from './modules/exports.mjs'
+import cldFlame from './data/psi-21.json' with { type: 'json' }
 
 export async function handleReading(kind, request, response) {
   const send = (status, data) => {
@@ -26,6 +27,11 @@ export async function handleReading(kind, request, response) {
   }
   if (kind !== 'catalog' && (!id || id.length > 160)) return send(400, { error: 'Valid experiment_id required' })
   const study = params.get('investigation_id') ?? ''
+  if (kind === 'catalog' && view === 'test-days') {
+    return study === cldFlame.investigation_id
+      ? send(200, cldFlame)
+      : send(404, { error: 'Test-day table not found' })
+  }
   const query = (params.get('q') ?? '').trim()
   const page = Number(params.get('page') ?? '1')
   const coverage = params.get('coverage') ?? ''

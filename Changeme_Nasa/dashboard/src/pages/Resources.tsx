@@ -3,6 +3,8 @@ import { ArrowUpRight, ExternalLink } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { RequestStatus, useReading } from '../components/ScientificReading'
 import { useInventory, type Catalog, type Study } from '../components/StudyInventory'
+import { CldFlameLink } from '../components/CldFlameEvidence'
+import { cldFlame } from '../cldFlame'
 
 const formatCount = new Intl.NumberFormat('en')
 
@@ -25,6 +27,10 @@ export function Resources() {
       <h1 className="svg-page-title text-center">Resources</h1>
       <section className="svg-black-panel p-6 md:p-10 space-y-4">
         <h2 className="svg-section-heading">NASA PSI sources</h2>
+        <article className="svg-subpanel space-y-2 p-4">
+          <h3 className="font-semibold"><CldFlameLink /></h3>
+          <a className="resource-link" href={cldFlame.psi}>NASA PSI test-day table</a>
+        </article>
         {!inventory.data ? <RequestStatus {...inventory} /> : !inventory.data.rows.length ? <p>No sources available.</p> : (
           <ul className="grid gap-3 sm:grid-cols-2">
             {inventory.data.rows.map(study => (

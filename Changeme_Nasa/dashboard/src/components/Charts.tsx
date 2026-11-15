@@ -46,6 +46,7 @@ export function DynamicBarChart({
   horizontal = false,
   accentColor = '#FEB352',
   maximum,
+  maxBars = 24,
 }: {
   rows: Record<string, string | number | boolean | null>[]
   labelColumn: string
@@ -55,8 +56,9 @@ export function DynamicBarChart({
   horizontal?: boolean
   accentColor?: string
   maximum?: number
+  maxBars?: number
 }) {
-  const sliced = rows.slice(0, 24)
+  const sliced = rows.slice(0, maxBars)
   const labels = sliced.map((r, i) => String(r[labelColumn] ?? `#${i + 1}`))
   const values = sliced.map((r) => {
     const v = r[valueColumn]

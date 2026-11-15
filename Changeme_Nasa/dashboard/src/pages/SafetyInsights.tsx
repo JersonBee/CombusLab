@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EvidenceLinks } from '../components/EvidenceLinks'
+import { CldFlameRelevance } from '../components/CldFlameEvidence'
 import { ScenarioForm, scenarios } from '../components/ScenarioForm'
 import { RequestStatus } from '../components/ScientificReading'
 import { useEvidence } from '../components/StudyInventory'
@@ -24,6 +25,7 @@ export function SafetyInsights() {
         <p>This brief describes which experimental conditions and research objectives the NASA catalog covers.
           Mission-level fire risk and operating limits are outside its scope.</p>
       </section>
+      <CldFlameRelevance scenario={scenario} />
       {!evidence.data ? <RequestStatus {...evidence} /> : coverage.length === 0 ? (
         <p role="status">{trials.length ? 'Select a criterion to build an evidence brief.' : 'No trials are available.'}</p>
       ) : (

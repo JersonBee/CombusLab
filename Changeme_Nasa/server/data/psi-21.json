@@ -1,0 +1,171 @@
+{
+  "investigation_id": "PSI-21",
+  "source": {
+    "url": "https://psi.nasa.gov/physci/repo/data/investigations/PSI-21",
+    "filename": "PSI-21_Experimental table_CLD Flame.csv",
+    "file_version": 1,
+    "sha256": "9fafbc5b3dddaf715ce8025ed9154ce297803f7b69a935f077ec26c8249e44c0"
+  },
+  "rows": [
+    {
+      "date": "2017-11-15",
+      "test_type": "Methane based test",
+      "flames_ignited": 10
+    },
+    {
+      "date": "2017-11-20",
+      "test_type": "Methane based test",
+      "flames_ignited": 5
+    },
+    {
+      "date": "2017-12-08",
+      "test_type": "Methane based test",
+      "flames_ignited": 8
+    },
+    {
+      "date": "2017-12-22",
+      "test_type": "Methane based test",
+      "flames_ignited": 3
+    },
+    {
+      "date": "2018-01-03",
+      "test_type": "Methane based test",
+      "flames_ignited": 9
+    },
+    {
+      "date": "2018-01-05",
+      "test_type": "Methane based test",
+      "flames_ignited": 7
+    },
+    {
+      "date": "2018-01-08",
+      "test_type": "Methane based test",
+      "flames_ignited": 8
+    },
+    {
+      "date": "2018-01-11",
+      "test_type": "Methane based test",
+      "flames_ignited": 14
+    },
+    {
+      "date": "2018-01-22",
+      "test_type": "Methane based test",
+      "flames_ignited": 3
+    },
+    {
+      "date": "2018-01-26",
+      "test_type": "Methane based test",
+      "flames_ignited": 16
+    },
+    {
+      "date": "2018-02-01",
+      "test_type": "Methane based test",
+      "flames_ignited": 13
+    },
+    {
+      "date": "2018-02-08",
+      "test_type": "Methane based test",
+      "flames_ignited": 8
+    },
+    {
+      "date": "2018-02-12",
+      "test_type": "Methane based test",
+      "flames_ignited": 10
+    },
+    {
+      "date": "2018-02-22",
+      "test_type": "Methane based test",
+      "flames_ignited": 16
+    },
+    {
+      "date": "2018-05-25",
+      "test_type": "Ethylene based test",
+      "flames_ignited": 3
+    },
+    {
+      "date": "2018-05-31",
+      "test_type": "Ethylene based test",
+      "flames_ignited": 2
+    },
+    {
+      "date": "2018-06-26",
+      "test_type": "Ethylene based test",
+      "flames_ignited": 9
+    },
+    {
+      "date": "2018-07-05",
+      "test_type": "Ethylene based test",
+      "flames_ignited": 14
+    },
+    {
+      "date": "2018-07-11",
+      "test_type": "Ethylene based test",
+      "flames_ignited": 10
+    },
+    {
+      "date": "2018-07-18",
+      "test_type": "Ethylene based test",
+      "flames_ignited": 16
+    },
+    {
+      "date": "2018-08-02",
+      "test_type": "Ethylene based test",
+      "flames_ignited": 13
+    },
+    {
+      "date": "2018-08-06",
+      "test_type": "Ethylene based test",
+      "flames_ignited": 18
+    },
+    {
+      "date": "2018-08-23",
+      "test_type": "Ethylene based test",
+      "flames_ignited": 16
+    },
+    {
+      "date": "2018-08-27",
+      "test_type": "Ethylene based test",
+      "flames_ignited": 14
+    },
+    {
+      "date": "2018-08-29",
+      "test_type": "Ethylene based test",
+      "flames_ignited": 6
+    },
+    {
+      "date": "2018-09-06",
+      "test_type": "Ethylene based test",
+      "flames_ignited": 12
+    },
+    {
+      "date": "2018-09-10",
+      "test_type": "Ethylene based test",
+      "flames_ignited": 14
+    },
+    {
+      "date": "2018-09-14",
+      "test_type": "Ethylene based test",
+      "flames_ignited": 15
+    },
+    {
+      "date": "2021-02-10",
+      "test_type": "Improved coflow tests",
+      "flames_ignited": 9
+    },
+    {
+      "date": "2021-02-15",
+      "test_type": "Improved coflow tests",
+      "flames_ignited": 16
+    },
+    {
+      "date": "2021-02-19",
+      "test_type": "Improved coflow tests",
+      "flames_ignited": 16
+    },
+    {
+      "date": "2021-03-03",
+      "test_type": "Improved coflow tests",
+      "flames_ignited": 11
+    }
+  ]
+}

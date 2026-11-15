@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { rankStudies, rankTrial, summarizeScenario } from '../src/scientificEvidence'
 import { compareConditions, overlayLimitation } from '../src/trialComparison'
+import { rankCldFlame } from '../src/cldFlame'
 
 const scenario = { gravity: 'lunar', oxygen: '21', pressure: '10.2', airflow: '', material: '', objective: 'spread' }
 const trial = {
@@ -15,6 +16,13 @@ const bass = {
 }
 
 describe('scenario ranking and evidence coverage', () => {
+  it('ranks the ACME soot investigation using study context and leaves unavailable conditions unscored', () => {
+    const result = rankCldFlame({ ...scenario, gravity: 'microgravity', objective: 'soot' })
+    expect(result.criteria.map(criterion => criterion.status)).toEqual(['match', 'match', 'missing', 'missing'])
+    expect(result.score).toBe(50)
+    expect(rankCldFlame(scenario).matches).toBe(0)
+  })
+
   it('distinguishes mismatched gravity from unavailable pressure and itemizes the score', () => {
     const result = rankTrial(trial, scenario)
     expect(result.criteria.map(({ status }) => status)).toEqual(['match', 'different', 'match', 'missing'])

@@ -5,6 +5,8 @@ import { useReading, RequestStatus } from '../components/ScientificReading'
 import { TrialSeries } from '../components/TrialSeries'
 import { useEvidence } from '../components/StudyInventory'
 import { EvidenceLinks } from '../components/EvidenceLinks'
+import { CldFlameEvidence, CldFlameLink } from '../components/CldFlameEvidence'
+import { cldFlame } from '../cldFlame'
 import { hasSensor, materialMatches, matchesResult, objectives, researchContext, resultTypes, sensors, type Objective } from '../scientificEvidence'
 
 type Condition = {
@@ -105,6 +107,13 @@ const pageSize = 20
 export function Discover() {
   const [params] = useSearchParams()
   const { key } = useLocation()
+  if (params.get('investigation_id') === cldFlame.id) {
+    return <div className="space-y-6">
+      <h1 className="svg-page-title">Discover</h1>
+      <Link className="resource-link" to="/discover">Back to research search</Link>
+      <CldFlameEvidence />
+    </div>
+  }
   return <DiscoverCatalog key={key}
     investigation={params.get('investigation_id') ?? ''}
     experiment={params.get('experiment_id') ?? ''}
@@ -136,6 +145,12 @@ function DiscoverCatalog({ investigation, experiment, coverage }: {
       matchesResult(row, filters.coverage)
   })
   const invalidFlow = Boolean(draft.flow_min && draft.flow_max && Number(draft.flow_min) > Number(draft.flow_max))
+  const showCldFlame = (!filters.investigation_id || filters.investigation_id === cldFlame.id) &&
+    (!filters.objective || filters.objective === 'soot') && !filters.sensor && !filters.coverage &&
+    !filters.direction && !filters.flow_min && !filters.flow_max &&
+    [cldFlame.name, cldFlame.id, 'methane ethylene gaseous fuel soot formation'].join(' ')
+      .toLowerCase().includes(filters.q.trim().toLowerCase()) &&
+    'methane ethylene gaseous fuel'.includes(filters.material.trim().toLowerCase())
   useEffect(() => {
     selectedTrial.current?.focus()
   }, [trialId])
@@ -167,7 +182,7 @@ function DiscoverCatalog({ investigation, experiment, coverage }: {
             </label>)}
           <label className="flex flex-col">Result type
             <select className="svg-input p-2" value={draft.coverage} onChange={(e) => setDraft({ ...draft, coverage: e.target.value })}>
-              <option value="">All trials</option>
+              <option value="">All evidence</option>
               {Object.entries(resultTypes).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
             </select>
           </label>
@@ -175,6 +190,7 @@ function DiscoverCatalog({ investigation, experiment, coverage }: {
             <select className="svg-input p-2" value={draft.investigation_id} onChange={(e) => setDraft({ ...draft, investigation_id: e.target.value })}>
               <option value="">All investigations</option>
               {Object.entries(researchContext).map(([id, { name }]) => <option key={id} value={id}>{name}</option>)}
+              <option value={cldFlame.id}>ACME · CLD Flame</option>
             </select>
           </label>
           <label className="flex flex-col">Flow direction
@@ -194,6 +210,12 @@ function DiscoverCatalog({ investigation, experiment, coverage }: {
         {coverage === 'series' && filters.coverage === 'series' && !trialId &&
           <p>Choose a trial to open its chart and ask a question.</p>}
         {(filters.flow_min || filters.flow_max) && <p>Airflow ranges apply to trials with a verified airflow value in the catalog.</p>}
+        {showCldFlame && (
+          <article className="svg-subpanel space-y-2 p-4">
+            <h2 className="svg-section-heading"><CldFlameLink /></h2>
+            <p>Explore recorded flame counts by test day and test type.</p>
+          </article>
+        )}
         {!catalog.data ? <RequestStatus {...catalog} /> : (
           <>
             {matches.length === 0 ? <p role="status">No matching trials.</p> : (

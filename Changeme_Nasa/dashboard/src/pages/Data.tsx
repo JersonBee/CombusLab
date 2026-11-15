@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { CldFlameLink } from '../components/CldFlameEvidence'
+import { cldFlame } from '../cldFlame'
 import { DownloadLinks, EvidenceLinks } from '../components/EvidenceLinks'
 import { RequestStatus } from '../components/ScientificReading'
 import { useEvidence } from '../components/StudyInventory'
@@ -89,6 +91,12 @@ export function DataLab() {
   return (
     <div className="space-y-6">
       <h1 className="svg-page-title">Data Lab</h1>
+      <section className="svg-subpanel space-y-2 p-4">
+        <h2 className="svg-section-heading">Test-day dataset</h2>
+        <CldFlameLink />
+        <p>Reported flame counts grouped by test day and test type.</p>
+        <a className="resource-link" href={cldFlame.endpoint} download="PSI-21-test-days.json">Download daily counts (JSON)</a>
+      </section>
       <section className="svg-black-panel p-6 md:p-10 space-y-4">
         <h2 className="svg-section-heading">Trial data and exports</h2>
         <p>Select a NASA trial to inspect available variables and download its measurements or reported conditions.</p>
