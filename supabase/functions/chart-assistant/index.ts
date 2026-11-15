@@ -1,7 +1,6 @@
 import { completions } from './providers.ts'
 
-const channels = ['o2', 'co2'] as const
-type Channel = typeof channels[number]
+import { channels, chartObservations, summarizeChart, type Channel } from './evidence.ts'
 const json = (body: unknown, status = 200) => Response.json(body, { status })
 
 export async function handle(request: Request) {
@@ -76,47 +75,18 @@ async function explain(request: Request) {
     if (response.status === 404) return json({ error: 'Trial not found' }, 404)
     if (!response.ok) return json({ error: 'Evidence service unavailable' }, 502)
     const series = await response.json()
-    const unit = series.units.find((item: { channel: string }) => item.channel === channel)?.unit
-    const readings = (series.rows as Array<{ time_s: number } & Record<Channel, number | null>>)
-      .map((row) => ({ time_s: row.time_s, value: row[channel as Channel] }))
-      .filter((row): row is { time_s: number; value: number } =>
-        typeof row.value === 'number' && Number.isFinite(row.value))
-    const values = readings.map(({ value }) => value)
-    if (!unit || !values.length || series.truncated) {
-      return json({ answer: null, reason: 'Insufficient evidence for this window', sources: [] })
+    const summary = summarizeChart(series, channel as Channel)
+    if (!summary) {
+      return json({ answer: null, reason: 'Insufficient evidence for this window', sources: [series.source] })
     }
-    const first = readings[0]
-    const last = readings[readings.length - 1]
-    const evidence = {
-      experiment_id, channel, unit, from_s, to_s, time_reference: series.time_reference,
-      source: series.source, rows: series.rows.length, missing: series.rows.length - values.length,
-      valid: values.length, first: first.value, last: last.value,
-      first_time_s: first.time_s, last_time_s: last.time_s,
-      delta_percentage_points: unit === '%' && readings.length > 1 ? last.value - first.value : null,
-      min: Math.min(...values), max: Math.max(...values),
-      mean: values.reduce((sum, value) => sum + value, 0) / values.length,
-    }
-    const normalized = question.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
-    const asksAboutGaps = /\b(huecos?|faltantes?|nulos?|ausentes?)\b/.test(normalized)
-    const asksAboutChange = /\b(cambio|cambiaron|vario|aumento|disminuyo|subio|bajo|tendencia)\b/.test(normalized)
-    const asksForCause = /\b(por que|causa\w*|motivo\w*|debido)\b/.test(normalized)
-    if (asksAboutGaps || asksAboutChange || asksForCause) {
-      const paragraphs: string[] = []
-      if (asksAboutChange) {
-        paragraphs.push(readings.length < 2
-          ? 'La ventana contiene una sola lectura válida, así que no se puede comparar el inicio con el final.'
-          : `La última lectura válida fue ${last.value > first.value ? 'mayor que' : last.value < first.value ? 'menor que' : 'igual a'} la primera. Esta comparación de dos lecturas no establece una tendencia continua.`)
-      }
-      if (asksAboutGaps) {
-        paragraphs.push(evidence.missing > 0
-          ? `Hay ${evidence.missing} filas sin un valor válido de este canal. La serie no indica por qué faltan esas lecturas.`
-          : 'Todas las filas de esta ventana tienen un valor válido para el canal seleccionado.')
-      }
-      if (asksForCause && !asksAboutGaps) paragraphs.push('La serie por sí sola no permite determinar la causa de los cambios observados.')
-      return json({ answer: paragraphs.join('\n\n'), evidence, sources: [series.source] })
-    }
-    const result = await completions(question, evidence)
-    return json({ ...result, evidence, sources: [series.source] })
+    const evidence = { ...summary.evidence, experiment_id, from_s, to_s }
+    const observations = chartObservations(evidence)
+    const alternates = summary.availableChannels.filter(name => name !== channel)
+    const result = await completions(question.trim(), evidence.channel, observations, alternates)
+    const fallback = [observations.overview, observations.endpoints, observations.gaps, observations.limits].join('\n\n')
+    return json(result
+      ? { ...result, evidence, sources: [series.source] }
+      : { answer: fallback, fallback: true, evidence, sources: [series.source] })
   } catch {
     return json({ error: 'Chart assistant temporarily unavailable' }, 503)
   }

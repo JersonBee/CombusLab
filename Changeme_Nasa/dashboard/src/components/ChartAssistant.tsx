@@ -10,6 +10,8 @@ type Answer = {
   answer: string | null
   reason?: string
   provider?: string
+  fallback?: boolean
+  suggested_channel?: Channel
   evidence?: {
     unit: string; rows: number; missing: number; valid: number
     first: number; last: number; first_time_s: number; last_time_s: number
@@ -18,21 +20,21 @@ type Answer = {
   sources: Array<{ url: string | null; doi: string | null }>
 }
 
-const number = new Intl.NumberFormat('es', { maximumFractionDigits: 5 })
+const number = new Intl.NumberFormat('en-US', { maximumFractionDigits: 5 })
+const channelLabels = { o2: 'O₂', co2: 'CO₂' }
 
 function ChartEvidence({ evidence }: { evidence: NonNullable<Answer['evidence']> }) {
   const format = (value: number) => number.format(value)
   return (
     <div className="space-y-1">
-      <p><strong>Lecturas de la ventana</strong></p>
-      <p>Primera válida: {format(evidence.first)} {evidence.unit} a los {format(evidence.first_time_s)} s.
-        Última válida: {format(evidence.last)} {evidence.unit} a los {format(evidence.last_time_s)} s.</p>
+      <p><strong>Readings in this window</strong></p>
+      <p>First valid reading: {format(evidence.first)} {evidence.unit} at {format(evidence.first_time_s)} s.
+        Last valid reading: {format(evidence.last)} {evidence.unit} at {format(evidence.last_time_s)} s.</p>
       {evidence.delta_percentage_points !== null &&
-        <p>Cambio entre ambas lecturas: {format(evidence.delta_percentage_points)} puntos porcentuales.</p>}
-      <p>Rango observado: {format(evidence.min)} a {format(evidence.max)} {evidence.unit}.
-        Promedio: {format(evidence.mean)} {evidence.unit}.</p>
-      <p>{evidence.valid} lecturas válidas y {evidence.missing} valores ausentes en {evidence.rows} filas.</p>
-      {evidence.missing > 0 && <p>Los huecos indican valores ausentes para este canal. La serie no indica su causa.</p>}
+        <p>Endpoint change: {format(evidence.delta_percentage_points)} percentage points.</p>}
+      <p>Observed range: {format(evidence.min)} to {format(evidence.max)} {evidence.unit}.
+        Mean: {format(evidence.mean)} {evidence.unit}.</p>
+      <p>{evidence.valid} valid readings and {evidence.missing} missing values across {evidence.rows} rows.</p>
     </div>
   )
 }
@@ -46,13 +48,13 @@ function nasaLink(value: string | null) {
   }
 }
 
-export function ChartAssistant({ id, from, to, channels }: {
-  id: string; from: number; to: number; channels: readonly Channel[]
+export function ChartAssistant({ id, from, to, channel, availableChannels, onSelectChannel }: {
+  id: string; from: number; to: number; channel: Channel; availableChannels: readonly Channel[]
+  onSelectChannel: (channel: Channel) => void
 }) {
   const [session, setSession] = useState<Session | null>()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [channel, setChannel] = useState(channels[0])
   const [question, setQuestion] = useState('')
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
@@ -81,9 +83,9 @@ export function ChartAssistant({ id, from, to, channels }: {
       setBusy(false)
     }
   }
-  async function ask() {
-    const prompt = question.trim()
-    if (!session || !prompt) return
+  async function ask(input: string) {
+    const prompt = input.trim()
+    if (!session || !prompt || busy) return
     setBusy(true)
     setNotice('')
     try {
@@ -109,7 +111,7 @@ export function ChartAssistant({ id, from, to, channels }: {
   return (
     <section id="chart-assistant" tabIndex={-1} className="svg-subpanel p-4 space-y-3" aria-label="Chart assistant">
       <h4 className="svg-section-heading">Chart assistant</h4>
-      <p>{id} · {from}–{to} s</p>
+      <p>Active chart · {id} · {channelLabels[channel]} · {from}–{to} s</p>
       {session === undefined ? <p role="status">Checking session…</p> : session === null ? (
         <form className="flex flex-wrap gap-3 items-end" onSubmit={(event) => { event.preventDefault(); void signIn() }}>
           <label className="flex flex-col">Email
@@ -130,23 +132,28 @@ export function ChartAssistant({ id, from, to, channels }: {
           <ul aria-live="polite" className="space-y-3">
             {turns.map(({ question: prompt, channel: selected, reply }, index) => (
               <li key={index} className="border-b border-white/15 pb-3">
-                <p><strong>{selected === 'o2' ? 'O₂' : 'CO₂'} · {prompt}</strong></p>
+                <p><strong>{channelLabels[selected]} · {prompt}</strong></p>
+                <p className="whitespace-pre-wrap">{reply.answer ?? reply.reason ?? 'Insufficient evidence'}</p>
                 {reply.evidence && Number.isFinite(reply.evidence.first_time_s) && <ChartEvidence evidence={reply.evidence} />}
-                <p className="whitespace-pre-wrap">{reply.answer?.replace(/\*\*([^*\n]+)\*\*/g, '$1') ?? reply.reason ?? 'Insufficient evidence'}</p>
-                {reply.provider && <p>AI interpretation · {reply.provider}</p>}
+                {reply.provider && <p>AI-guided explanation · {reply.provider}</p>}
+                {reply.fallback && <p>AI providers are unavailable. Showing a summary calculated from the measurements.</p>}
                 {reply.sources.map((source, sourceIndex) => {
                   const href = nasaLink(source.url)
                   return <p key={sourceIndex}>{href && <a className="underline" href={href}>NASA PSI evidence</a>}{source.doi && <> · DOI {source.doi}</>}</p>
                 })}
+                {reply.suggested_channel && reply.suggested_channel !== channel &&
+                  availableChannels.includes(reply.suggested_channel) && (
+                    <button className="svg-input p-2" type="button" disabled={busy}
+                      onClick={() => onSelectChannel(reply.suggested_channel!)}>
+                      Plot {channelLabels[reply.suggested_channel]}
+                    </button>
+                  )}
               </li>
             ))}
           </ul>
-          <form className="space-y-3" onSubmit={(event) => { event.preventDefault(); void ask() }}>
-            <label className="flex flex-col">Channel
-              <select className="svg-input p-2" disabled={busy} value={channel} onChange={(event) => setChannel(event.target.value as Channel)}>
-                {channels.map((item) => <option key={item} value={item}>{item === 'o2' ? 'O₂' : 'CO₂'}</option>)}
-              </select>
-            </label>
+          <form className="space-y-3" onSubmit={(event) => { event.preventDefault(); void ask(question) }}>
+            <button className="resource-link" type="button" disabled={busy}
+              onClick={() => void ask('What does this chart show?')}>What does this chart show?</button>
             <label className="flex flex-col">Question
               <textarea className="svg-input p-2" maxLength={1200} required value={question} onChange={(event) => setQuestion(event.target.value)} />
             </label>

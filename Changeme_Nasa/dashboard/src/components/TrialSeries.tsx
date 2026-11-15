@@ -76,9 +76,10 @@ export function TrialSeries({ id, showAssistant = false }: { id: string; showAss
               experiment_id: id, channel: selected.name, ...interval,
             })}>Export in Data Lab</Link>}
           </div>
-          {showAssistant && !data.truncated && available.length > 0 && (
-            <ChartAssistant key={params.toString()} id={id}
-              from={Number(interval.from_s)} to={Number(interval.to_s)} channels={available.map(channel => channel.name)} />
+          {showAssistant && !data.truncated && selected && (
+            <ChartAssistant key={params.toString() + selected.name} id={id}
+              from={Number(interval.from_s)} to={Number(interval.to_s)} channel={selected.name}
+              availableChannels={available.map(channel => channel.name)} onSelectChannel={setPreferredChannel} />
           )}
         </>
       )}

@@ -33,6 +33,14 @@ Open Comparations and choose two distinct trial IDs from the catalog. The overla
 
 Downloads are per trial. The series links preserve the selected channel and time window. The conditions links export the test observations listed in the card. For CSV, see [export fields](docs/export-fields.md). Unquoted empty CSV fields and JSON nulls represent missing values.
 
+## Chart assistant
+
+Open the assistant on a synchronized trial chart in Dashboard or Discover and sign in with a pilot account. The browser submits the active trial, channel, and time window. The Edge Function rereads the published series, calculates the summary, and asks the first available provider to choose verified observations. An alternate-channel suggestion requires available readings and an explicit click to change the chart. If every provider fails, the assistant shows the calculated evidence summary.
+
+The frontend uses `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. The `chart-assistant` function uses `COMBUSLAB_ASSISTANT_ORIGINS` for allowed browser origins and `COMBUSLAB_EVIDENCE_ORIGIN` for the deployed scientific API. Groq, Cloudflare Workers AI, and Pollinations credentials stay in Supabase Edge Function secrets.
+
+Deploy changes to `supabase/functions/chart-assistant` to Supabase alongside the Vercel frontend release. A Git push that triggers Vercel does not publish the Edge Function.
+
 ## Testing and error monitoring
 
 Use Node.js 24. From the Git repository root, run `npm ci --prefix Changeme_Nasa` and `npm ci --prefix Changeme_Nasa/dashboard`. The first command installs the Husky hook for local clones. The hook runs the Vitest suite before a commit. To run it separately, use `npm test --prefix Changeme_Nasa`. The API tests use a simulated database and cover validation, pagination, CSV nulls, and server errors.

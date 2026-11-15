@@ -37,7 +37,7 @@ export function Dashboard() {
           </label>
         </div>
         {!catalog.data && <RequestStatus {...catalog} />}
-        <TrialSeries key={trialId} id={trialId} />
+        <TrialSeries key={trialId} id={trialId} showAssistant />
       </section>
     </div>
   )
