@@ -8,12 +8,45 @@ import { cldFlame } from '../cldFlame'
 
 const featuredTrial = { experiment_id: 'PSI-100:S1:r2', investigation_id: 'PSI-100' }
 
-const flamePixels = [
-  '.......b......',
-  '......bcc.....',
-  '.....bcccb....',
-  '.....bcccb....',
-  '..b.bccwccb...',
+const flameTips = [
+  [
+    '.......b......',
+    '......bcc.....',
+    '.....bcccb....',
+    '.....bcccb....',
+    '....bccwccb...',
+  ],
+  [
+    '..............',
+    '......bb......',
+    '.....bccb.....',
+    '.....bcccb....',
+    '....bccwccb...',
+  ],
+  [
+    '..............',
+    '......b.......',
+    '.....bccb.....',
+    '.....bcccb....',
+    '....bccwccb...',
+  ],
+  [
+    '.......b......',
+    '......bccb....',
+    '......bccb....',
+    '.....bcccb....',
+    '....bccwccb...',
+  ],
+  [
+    '........b.....',
+    '.......bcb....',
+    '......bcccb...',
+    '.....bcccb....',
+    '....bccwccb...',
+  ],
+]
+
+const flameBody = [
   '..bbccwwccbb..',
   '.bbccwwwwccbb.',
   '.bccw.ww.wccb.',
@@ -23,7 +56,16 @@ const flamePixels = [
   '...bbbbbbbb...',
 ]
 
+const flameSequence = [0, 1, 2, 1, 0, 3, 4, 3]
 const pixelColors = { b: 'var(--color-orbital)', c: 'var(--color-cyan)', w: 'var(--color-ink)' }
+
+function renderPixels(rows: string[], offset = 0) {
+  return rows.flatMap((row, y) => Array.from(row, (pixel, x) => {
+    const color = pixelColors[pixel as keyof typeof pixelColors]
+    return color ? <span key={y * 14 + x}
+      style={{ gridArea: `${y + offset + 1} / ${x + 1}`, backgroundColor: color }} /> : null
+  }))
+}
 
 function PixelFlame() {
   return (
@@ -31,12 +73,14 @@ function PixelFlame() {
       <div className="orbital-sketch-grid">
         <span className="orbital-sketch-spark" />
         <div className="pixel-flame">
-          {flamePixels.flatMap((row, y) => Array.from(row, (pixel, x) => {
-            const color = pixelColors[pixel as keyof typeof pixelColors]
-            const flicker = y < 6 ? 'tip' : pixel === 'b' && (x < 3 || x > 10) ? 'edge' : undefined
-            return color ? <span key={y * 14 + x} data-flicker={flicker}
-              style={{ gridArea: `${y + 1} / ${x + 1}`, backgroundColor: color }} /> : null
-          }))}
+          <div className="pixel-flame-tip">
+            <div className="pixel-flame-frames">
+              {flameSequence.map((frame, index) => (
+                <div className="pixel-flame-frame" key={index}>{renderPixels(flameTips[frame])}</div>
+              ))}
+            </div>
+          </div>
+          {renderPixels(flameBody, flameTips[0].length)}
         </div>
       </div>
       <figcaption>Little flame, meet orbit.</figcaption>

@@ -349,18 +349,30 @@
 }
 
 .pixel-flame {
+  position: relative;
   display: grid;
   grid-template: repeat(12, var(--pixel)) / repeat(14, var(--pixel));
 }
 
-.pixel-flame [data-flicker="tip"] { animation: flame-tip 720ms steps(1, end) infinite; }
-.pixel-flame [data-flicker="edge"] { animation: flame-edge 490ms steps(1, end) infinite alternate; }
-@keyframes flame-tip {
-  24% { transform: translateX(calc(var(--pixel) * -1)); }
-  48% { transform: translateX(calc(var(--pixel) * -1)); }
-  76% { transform: translateX(var(--pixel)); }
+.pixel-flame-tip {
+  --tip-height: calc(5 * var(--pixel));
+  position: absolute;
+  inset: 0 0 auto;
+  height: var(--tip-height);
+  overflow: hidden;
 }
-@keyframes flame-edge { to { opacity: .57; transform: translateY(calc(var(--pixel) * -.35)); } }
+
+.pixel-flame-frame {
+  display: grid;
+  height: var(--tip-height);
+  grid-template: repeat(5, var(--pixel)) / repeat(14, var(--pixel));
+}
+
+.pixel-flame-frames { animation: flame-tip-frame 1.92s steps(8, end) infinite; }
+
+@keyframes flame-tip-frame {
+  to { transform: translateY(calc(-8 * var(--tip-height))); }
+}
 
 .orbital-sketch-spark {
   position: absolute;
@@ -550,12 +562,12 @@ button.svg-input:hover:not(:disabled) {
   .dashboard-main { padding-top: 24px; }
 }
 
-[data-motion-paused="true"] :is(.orbital-sky-photo, .orbital-sky-stars, .pixel-flame [data-flicker], .assistant-orbit, .nav-flame > span) {
+[data-motion-paused="true"] :is(.orbital-sky-photo, .orbital-sky-stars, .pixel-flame-frames, .assistant-orbit, .nav-flame > span) {
   animation-play-state: paused;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :is(.orbital-sky-photo, .orbital-sky-stars, .pixel-flame [data-flicker], .assistant-orbit),
+  :is(.orbital-sky-photo, .orbital-sky-stars, .pixel-flame-frames, .assistant-orbit),
   .svg-nav-link:is(:hover, :focus-visible) .nav-flame > span { animation: none; }
   :is(.assistant-launcher, .svg-nav-link, .svg-input),
   .nav-flame::before, .nav-flame::after, .nav-flame > span { transition: none; }
