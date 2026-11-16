@@ -48,7 +48,25 @@ The frontend uses `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. The `
 
 Apply the public assistant quota and catalog cache migrations before deploying `supabase/functions/chart-assistant` with gateway JWT verification disabled. The service-only quota allows up to 12 AI requests per minute across visitors. The assistant returns the calculated evidence summary when the quota is exhausted or unavailable, or when all providers fail. Publish the Edge Function alongside the Vercel frontend release. A Git push that triggers Vercel does not publish the Edge Function.
 
+### Provider configuration
+
+| Edge Function secrets | Purpose |
+|---|---|
+| `GROQ_API_KEY` | Groq credential. Override the configured default model with `GROQ_MODEL`. |
+| `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` | Cloudflare Workers AI credentials. Override the model with `CLOUDFLARE_MODEL`. |
+| `POLLINATIONS_API_KEY` | Pollinations credential. Override the model with `POLLINATIONS_MODEL`. |
+
+The scientific copilot keeps recent subject context in the browser. The service-only Supabase cache keeps public catalog evidence for five minutes. If the cache is unavailable, the Edge Function reads from the source API. When editing shared evidence logic, rebuild the Node.js fallback with `npm run build:assistant --prefix Changeme_Nasa/dashboard`.
+
 ## Testing and error monitoring
+
+After generating the reference DuckDB file described in the [dataset guide](../datasets/README.en.md), verify a deployed API window against it from the repository root.
+
+```sh
+python Changeme_Nasa/scripts/check_chart.py --base-url https://combuslab.vercel.app
+```
+
+The checker compares units, elapsed time, timestamps, values, and null positions with the local reference.
 
 Use Node.js 24. From the Git repository root, run `npm ci --prefix Changeme_Nasa` and `npm ci --prefix Changeme_Nasa/dashboard`. The first command installs the Husky hook for local clones. The hook runs the Vitest suite before a commit. To run it separately, use `npm test --prefix Changeme_Nasa`. The API tests use a simulated database and cover validation, pagination, CSV nulls, and server errors.
 

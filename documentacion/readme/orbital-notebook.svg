@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="340" viewBox="0 0 1120 340" role="img" aria-labelledby="title description">
+  <title id="title">CombusLab orbital notebook</title>
+  <desc id="description">Night-blue notebook paper with a cyan pixel flame, orbital paths, and amber sparks.</desc>
+  <defs>
+    <pattern id="paper" width="24" height="24" patternUnits="userSpaceOnUse">
+      <path d="M24 0H0V24" fill="none" stroke="#526984" stroke-opacity=".22"/>
+    </pattern>
+    <radialGradient id="glow">
+      <stop stop-color="#1B2A42"/>
+      <stop offset="1" stop-color="#080F1F"/>
+    </radialGradient>
+  </defs>
+  <rect x="1" y="1" width="1118" height="338" rx="24" fill="url(#glow)" stroke="#526984" stroke-width="2"/>
+  <rect x="21" y="21" width="1078" height="298" rx="14" fill="url(#paper)" stroke="#526984" stroke-opacity=".5"/>
+  <path d="M56 21V319M68 21V319" stroke="#82A7FF" opacity=".35"/>
+  <g fill="#080F1F" stroke="#526984">
+    <circle cx="37" cy="67" r="5"/><circle cx="37" cy="170" r="5"/><circle cx="37" cy="273" r="5"/>
+  </g>
+  <g fill="none" stroke-width="2">
+    <ellipse cx="870" cy="170" rx="172" ry="51" stroke="#58E0ED" opacity=".6" transform="rotate(-23 870 170)"/>
+    <ellipse cx="870" cy="170" rx="143" ry="89" stroke="#82A7FF" opacity=".42" stroke-dasharray="5 9" transform="rotate(31 870 170)"/>
+  </g>
+  <g shape-rendering="crispEdges">
+    <path d="M867 83h15v15h14v28h15v15h14v58h-14v15h-15v14h-58v-14h-15v-15h-14v-43h14v-15h15v15h14v-29h15z" fill="#82A7FF"/>
+    <path d="M867 112h15v29h14v15h15v43h-15v15h-58v-15h-15v-43h15v15h14v-30h15z" fill="#58E0ED"/>
+    <path d="M867 155h15v15h14v29h-14v15h-29v-15h-15v-15h15v-14h14z" fill="#F0F6FF"/>
+    <path d="M852 177h7v7h-7zm27 0h7v7h-7zm-14 16h10v4h-10z" fill="#111C30"/>
+    <path d="M1014 93h10v10h-10zM697 220h9v9h-9zM952 254h7v7h-7zM740 69h5v5h-5z" fill="#F3BE78"/>
+    <path d="M993 224h7v7h-7zM791 255h5v5h-5zM932 72h6v6h-6z" fill="#58E0ED"/>
+    <path d="M1038 162h5v5h-5zM751 209h5v5h-5zM784 100h8v8h-8z" fill="#82A7FF"/>
+  </g>
+  <g font-family="monospace">
+    <text x="96" y="100" font-size="17" letter-spacing="3" fill="#F3BE78">NASA SPACE APPS CHALLENGE 2026</text>
+    <text x="91" y="185" font-size="77" font-weight="700" letter-spacing="-4" fill="#F0F6FF">CombusLab</text>
+    <text x="96" y="231" font-size="23" fill="#58E0ED">Fire in microgravity</text>
+  </g>
+  <path d="M96 263h34m8 0h14m8 0h5" stroke="#82A7FF" stroke-width="3"/>
+</svg>

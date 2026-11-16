@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="Changeme_Nasa/dashboard/src/assets/logo.svg" alt="CombusLab pixel-art logo" width="96">
+  <img src="documentacion/readme/orbital-notebook.svg" alt="CombusLab. Fire in microgravity. NASA Space Apps Challenge 2026. A blue pixel flame floats over orbital notebook paper." width="1120">
 </p>
 
 <h1 align="center">CombusLab</h1>
@@ -7,9 +7,16 @@
 <p align="center"><strong>A field notebook for fire in microgravity</strong></p>
 
 <p align="center">
-  <a href="https://combuslab.vercel.app/">Open the dashboard</a> ·
-  <a href="https://combuslab.vercel.app/flight-notebook">Try Flight Notebook</a> ·
+  <a href="https://combuslab.vercel.app/"><strong>Open the dashboard</strong></a> ·
+  <a href="https://combuslab.vercel.app/flight-notebook"><strong>Try Flight Notebook</strong></a> ·
   <a href="https://www.spaceappschallenge.org/2026/challenges/flame-in-freefall/">NASA Space Apps Challenge</a>
+</p>
+
+<p align="center">
+  <a href="#explore-the-lab">Features</a> ·
+  <a href="#data-and-nasa-sources">NASA data</a> ·
+  <a href="#architecture-and-technology">Tech stack</a> ·
+  <a href="#run-locally">Run locally</a>
 </p>
 
 ---
@@ -29,6 +36,24 @@ CombusLab is an interactive research dashboard built for the 2026 NASA Space App
 | **Flight Notebook** | Step through NASA's published SAFFIRE-I and SAFFIRE-III flame-front composites, compare gas readings, and download a Markdown evidence note with your proposed next measurement. |
 | **Scientific copilot** | Open the pixel-art flame from any view, ask a follow-up about the active study or chart, and inspect NASA citations. The dashboard and copilot are public. |
 | **Resources** | Browse the NASA research library and see which investigations have integrated records, partial coverage, or external datasets. |
+
+## Inside Flight Notebook
+
+<table>
+  <tr>
+    <td align="center" width="138">
+      <img src="Changeme_Nasa/dashboard/src/assets/pixil-frame-0.svg" alt="CombusLab's pixel-art flame copilot" width="80">
+    </td>
+    <td>
+      <strong>Same fabric, different airflow.</strong><br>
+      Follow the published flame fronts from SAFFIRE-I and SAFFIRE-III. Inspect the oxygen and carbon dioxide traces, then ask the copilot to explain the chart you have open.
+    </td>
+  </tr>
+</table>
+
+1. **Observe.** Step through NASA's composite images. The source images were taken 40 seconds apart.
+2. **Compare.** Open both trials side by side and check which conditions differ.
+3. **Record.** Choose what to measure next and save a Markdown evidence note with your own observations.
 
 ## Design and development
 
@@ -53,6 +78,23 @@ The [Physical Sciences Informatics (PSI) combustion index](https://www.nasa.gov/
 ## Architecture and technology
 
 CombusLab uses a **modular monolith** for the dashboard and scientific API. Vercel deploys them together. The Node.js API serves the catalog, trial metadata, series, and exports through same-origin routes backed by read-only PostgreSQL queries. The scientific copilot routes through a Supabase Edge Function. The backend calculates and validates the evidence and citations, while the model selects and orders supported observations. A private, five-minute Supabase cache stores public catalog evidence. Recent conversation context stays in the browser, and the trash button clears it. A server-side backup can return evidence when the Edge Function is unavailable.
+
+```mermaid
+flowchart LR
+  NASA["NASA PSI files"] --> Python["Python data pipeline"]
+  Python --> DB["Supabase PostgreSQL"]
+  UI["React dashboard"] --> API["Node.js API<br/>Vercel"]
+  API --> DB
+  API --> Edge["Scientific copilot<br/>Supabase Edge Function"]
+  Edge --> Models["Groq · Workers AI · Pollinations"]
+  Edge -->|Catalog cache| DB
+  classDef navy fill:#111C30,stroke:#82A7FF,color:#F0F6FF
+  classDef aqua fill:#1B2A42,stroke:#58E0ED,color:#F0F6FF
+  classDef amber fill:#1B2A42,stroke:#F3BE78,color:#F0F6FF
+  class NASA,Python,DB navy
+  class UI,API aqua
+  class Edge,Models amber
+```
 
 | Layer | Stack |
 | --- | --- |
