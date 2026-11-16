@@ -1,3 +1,4 @@
+import { useAssistantContext } from '../assistantContext'
 import { useState } from 'react'
 import { DynamicBarChart } from '../components/Charts'
 import { EvidenceLinks } from '../components/EvidenceLinks'
@@ -10,6 +11,7 @@ import { rankStudies, statusLabels, type Scenario } from '../scientificEvidence'
 export function Ranking() {
   const evidence = useEvidence()
   const [selection, setSelection] = useState<Scenario>(scenarios.spacecraft)
+  useAssistantContext({ scenario: selection, chart: { kind: 'ranking' } })
   const studies = rankStudies(evidence.data?.rows ?? [], selection)
   const chartRows = studies.map(({ study, score, matching, quantitative }) => ({ study, score, matching, quantitative }))
 

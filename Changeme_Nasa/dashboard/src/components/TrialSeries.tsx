@@ -1,3 +1,4 @@
+import { useAssistantContext } from '../assistantContext'
 import { useId, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { ChartOptions } from 'chart.js'
@@ -29,6 +30,10 @@ export function TrialSeries({ id, showAssistant = false }: { id: string; showAss
   })
   const selected = available.find(channel => channel.name === preferredChannel) ?? available[0]
   const invalidInterval = !isSeriesWindowValid(draft)
+  useAssistantContext({
+    experimentId: id,
+    chart: selected ? { kind: 'gas', channel: selected.name, from: Number(interval.from_s), to: Number(interval.to_s) } : undefined,
+  })
 
   return (
     <section className="svg-subpanel min-w-0 space-y-4 p-4 md:p-5" aria-label="Synchronized measurements">

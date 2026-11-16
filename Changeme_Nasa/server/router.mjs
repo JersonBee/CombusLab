@@ -1,9 +1,11 @@
+import { handleAssistant } from './assistant.mjs'
 import experiment from '../api/experiment.js'
 import series from '../api/series.js'
 import catalog from '../api/catalog.js'
 import download from '../api/export.js'
 
 const handlers = new Map([
+  ['/api/assistant/chat', handleAssistant],
   ['/api/experiment', experiment],
   ['/api/series', series],
   ['/api/catalog', catalog],

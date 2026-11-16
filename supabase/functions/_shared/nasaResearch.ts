@@ -1,0 +1,61 @@
+const psi = (id: number) => `https://psi.nasa.gov/physci/repo/data/investigations/PSI-${id}`
+
+export const nasaResearch = [
+  {
+    title: 'SAFFIRE',
+    topic: 'Flame spread',
+    summary: 'Large-scale tests in Cygnus examined how flames spread over spacecraft materials under forced airflow.',
+    links: [{ label: 'SAFFIRE-I · PSI-98', url: psi(98) }, { label: 'SAFFIRE-II · PSI-99', url: psi(99) },
+      { label: 'SAFFIRE-III · PSI-100', url: psi(100) }],
+    app: { label: 'Open the ventilation case', path: '/flight-notebook' },
+    coverage: 'Trial records and synchronized gas readings in CombusLab',
+  },
+  {
+    title: 'BASS and BASS-II',
+    topic: 'Solid fuels and suppression',
+    summary: 'Small-scale ISS tests studied how solid samples ignite, burn, and go out under different flow conditions.',
+    links: [{ label: 'BASS · PSI-26', url: psi(26) }, { label: 'BASS-II · PSI-25', url: psi(25) }],
+    app: { label: 'Explore BASS-II trials', path: '/discover?investigation_id=PSI-25' },
+    coverage: 'Trial records and reported conditions in CombusLab',
+  },
+  {
+    title: 'FLEX and FLEX-2',
+    topic: 'Liquid fuel and extinction',
+    summary: 'Liquid fuel droplet experiments provide evidence about burning and extinction in microgravity. FLEX also studied how surrounding gases affect extinction.',
+    links: [{ label: 'FLEX · PSI-69', url: psi(69) }, { label: 'FLEX-2 · PSI-68', url: psi(68) }],
+    coverage: 'External datasets on NASA PSI',
+  },
+  {
+    title: 'SPICE',
+    topic: 'Soot and airflow',
+    summary: 'Controlled gas flames probe how fuel, burner geometry, and coflow affect the onset of visible soot emission.',
+    links: [{ label: 'SPICE · PSI-107', url: psi(107) }],
+    coverage: 'External dataset on NASA PSI',
+  },
+  {
+    title: 'ACME',
+    topic: 'Gas flames and soot',
+    summary: 'ISS investigations use gaseous flames to study soot formation, flame stability, and combustion under controlled conditions.',
+    links: [{ label: 'CLD Flame · PSI-21', url: psi(21) }, { label: 'Burning Rate Emulator · PSI-20', url: psi(20) },
+      { label: 'E-FIELD Flames · PSI-22', url: psi(22) }, { label: 's-Flame · PSI-23', url: psi(23) },
+      { label: 'Flame Design · PSI-10', url: psi(10) }, { label: 'NASA ACME overview', url: 'https://science.nasa.gov/mission/acme/' }],
+    app: { label: 'Explore CLD Flame test days', path: '/discover?investigation_id=PSI-21' },
+    coverage: 'CLD Flame test-day counts in CombusLab. Other datasets on NASA PSI.',
+  },
+  {
+    title: 'SAME and SAME-R',
+    topic: 'Smoke and detection',
+    summary: 'Smoke particle experiments provide evidence for evaluating spacecraft smoke detection.',
+    links: [{ label: 'SAME · PSI-102', url: psi(102) }, { label: 'SAME-R · PSI-101', url: psi(101) }],
+    coverage: 'External datasets on NASA PSI',
+  },
+  {
+    title: 'SoFIE',
+    topic: 'Ignition and flammability',
+    summary: 'ISS solid-fuel experiments study ignition, growth, and extinction under controlled spacecraft atmosphere conditions.',
+    links: [{ label: 'NASA SoFIE overview', url: 'https://science.nasa.gov/biological-physical/investigations/sofie/' },
+      { label: 'Growth and Extinction Limit', url: 'https://science.nasa.gov/biological-physical/investigations/sofie-gel/' },
+      { label: 'Material Ignition and Suppression Test', url: 'https://science.nasa.gov/biological-physical/investigations/sofie-mist-solid-fuel-ignition-and-extinction-material-ignition-and-suppression-test/' }],
+    coverage: 'NASA investigation documentation',
+  },
+]

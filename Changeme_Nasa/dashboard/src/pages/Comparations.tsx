@@ -1,19 +1,16 @@
+import { useAssistantContext } from '../assistantContext'
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Line } from 'react-chartjs-2'
 import { chartColors, chartTooltip } from '../components/Charts'
 import { RequestStatus, useReading } from '../components/ScientificReading'
 import { DownloadLinks } from '../components/EvidenceLinks'
+import { useEvidence } from '../components/StudyInventory'
 import { defaultSeriesWindow, isSeriesWindowValid } from '../seriesSelection'
+import { researchContext, type Evidence, type Trial } from '../scientificEvidence'
 import { channelUnit, compareConditions, hasChannelReadings, overlayLimitation,
   type Channel, type ComparisonConditions, type ComparisonSeries } from '../trialComparison'
 
-type Trial = {
-  experiment_id: string
-  study_name: string
-  material_original: string | null
-  has_series: boolean
-  has_conditions: boolean
-}
 type TrialDetails = {
   experiment: ComparisonConditions & {
     source_url: string | null
@@ -27,41 +24,47 @@ type TrialDetails = {
 type Selection = { channel: Channel; from_s: string; to_s: string }
 const initialSelection: Selection = { channel: 'o2', ...defaultSeriesWindow }
 
-function TrialPicker({ label, trial, onSelect }: { label: string; trial?: Trial; onSelect: (row: Trial) => void }) {
-  const [input, setInput] = useState('')
-  const [search, setSearch] = useState('')
-  const [page, setPage] = useState(1)
-  const catalog = useReading<{ rows: Trial[]; has_next: boolean }>(
-    '/api/catalog?' + new URLSearchParams({ q: search, page: String(page) }),
-  )
+function TrialPicker({ label, trial, records, onSelect }: {
+  label: string; trial?: Trial; records: Evidence[]; onSelect: (row: Trial | undefined) => void
+}) {
+  const [query, setQuery] = useState('')
+  const [investigation, setInvestigation] = useState('')
+  const search = query.trim().toLowerCase()
+  const groups = Object.entries(researchContext).flatMap(([id, { name }]) => {
+    if (investigation && investigation !== id) return []
+    const rows = records.filter(row => row.investigation_id === id &&
+      [name, row.study_name, row.experiment_id, row.material_original, row.material_normalized]
+        .some(value => value?.toLowerCase().includes(search)))
+    return rows.length ? [{ id, name, rows }] : []
+  })
+  const selectedOutsideFilter = trial && !groups.some(group =>
+    group.rows.some(row => row.experiment_id === trial.experiment_id))
   return (
-    <section className="svg-subpanel p-4 space-y-3" aria-label={label}>
+    <section className="svg-subpanel min-w-0 space-y-3 p-4" aria-label={label}>
       <h2 className="svg-section-heading">{label}</h2>
-      <form className="flex flex-wrap gap-2" onSubmit={(e) => { e.preventDefault(); setSearch(input); setPage(1) }}>
-        <label className="flex flex-col">Study, trial or material
-          <input className="svg-input p-2" maxLength={120} value={input} onChange={(e) => setInput(e.target.value)} />
-        </label>
-        <button className="svg-input px-3 self-end py-2">Search</button>
-      </form>
-      {!catalog.data ? <RequestStatus {...catalog} /> : (
-        <>
-          {catalog.data.rows.length ? (
-            <select aria-label={'Choose ' + label} className="svg-input w-full p-2" value={trial?.experiment_id ?? ''} onChange={(e) => {
-              const selected = catalog.data?.rows.find((row) => row.experiment_id === e.target.value)
-              if (selected) onSelect(selected)
-            }}>
-              <option value="" disabled>Select a trial</option>
-              {trial && !catalog.data.rows.some((row) => row.experiment_id === trial.experiment_id) && <option value={trial.experiment_id}>{trial.experiment_id}</option>}
-              {catalog.data.rows.map((row) => <option key={row.experiment_id} value={row.experiment_id}>{row.study_name} · {row.experiment_id}</option>)}
-            </select>
-          ) : <p role="status">No matching trials.</p>}
-          <div className="flex gap-3 items-center">
-            <button className="svg-input px-2" disabled={page === 1} onClick={() => setPage(page - 1)}>Previous</button>
-            <span>Page {page}</span>
-            <button className="svg-input px-2" disabled={!catalog.data.has_next} onClick={() => setPage(page + 1)}>Next</button>
-          </div>
-        </>
-      )}
+      <label className="flex flex-col">Investigation
+        <select className="svg-input w-full p-2" value={investigation}
+          onChange={event => setInvestigation(event.target.value)}>
+          <option value="">All comparable investigations</option>
+          {Object.entries(researchContext).filter(([id]) => records.some(row => row.investigation_id === id))
+            .map(([id, { name }]) => <option key={id} value={id}>{name}</option>)}
+        </select>
+      </label>
+      <label className="flex flex-col">Filter by study, trial or material
+        <input className="svg-input w-full p-2" maxLength={120} value={query}
+          onChange={event => setQuery(event.target.value)} />
+      </label>
+      <select aria-label={'Choose ' + label} className="svg-input w-full p-2" value={trial?.experiment_id ?? ''}
+        onChange={event => onSelect(records.find(row => row.experiment_id === event.target.value))}>
+        <option value="">Select a trial</option>
+        {selectedOutsideFilter && <option value={trial.experiment_id}>{trial.experiment_id} (current selection)</option>}
+        {groups.map(({ id, name, rows }) => <optgroup key={id} label={name}>
+          {rows.map(row => <option key={row.experiment_id} value={row.experiment_id}>
+            {row.experiment_id}{row.material_original ? ' · ' + row.material_original : ''}
+          </option>)}
+        </optgroup>)}
+      </select>
+      {groups.length === 0 && <p role="status">No matching trials.</p>}
       {trial && <p>{trial.material_original ?? 'Material not recorded'} · {[
         trial.has_series && 'Time series', trial.has_conditions && 'Test conditions',
       ].filter(Boolean).join(' · ') || 'Catalog record'}</p>}
@@ -117,6 +120,11 @@ function SeriesComparison({ left, right }: { left: Trial; right: Trial }) {
   const pairs = [{ trial: left, result: a }, { trial: right, result: b }]
   const reason = seriesA && seriesB && overlayLimitation(seriesA, seriesB, selection.channel)
   const invalidWindow = !isSeriesWindowValid(draft)
+  useAssistantContext({
+    chart: seriesA && seriesB && !reason ? {
+      kind: 'overlay', channel: selection.channel, from: Number(selection.from_s), to: Number(selection.to_s),
+    } : undefined,
+  })
   return (
     <section className="svg-subpanel p-4 space-y-4">
       <h2 className="svg-section-heading">Compare synchronized series</h2>
@@ -210,14 +218,34 @@ function SelectedComparison({ left, right }: { left: Trial; right: Trial }) {
 }
 
 export function Comparations() {
-  const [left, setLeft] = useState<Trial>()
-  const [right, setRight] = useState<Trial>()
+  const [params] = useSearchParams()
+  const a = params.get('a')
+  const b = params.get('b')
+  const evidence = useEvidence()
+  if (!evidence.data) {
+    return <div className="space-y-4">
+      <h1 className="svg-page-title text-center">Compare trials</h1>
+      <RequestStatus {...evidence} />
+    </div>
+  }
+  const records = evidence.data.rows
+  return <TrialComparison key={JSON.stringify([a, b])} records={records}
+    initialLeft={records.find(row => row.experiment_id === a)}
+    initialRight={records.find(row => row.experiment_id === b)} />
+}
+
+function TrialComparison({ initialLeft, initialRight, records }: {
+  initialLeft?: Trial; initialRight?: Trial; records: Evidence[]
+}) {
+  const [left, setLeft] = useState(initialLeft)
+  const [right, setRight] = useState(initialRight)
+  useAssistantContext({ selectedExperiments: [left?.experiment_id, right?.experiment_id].filter((id): id is string => Boolean(id)) })
   return (
     <div className="space-y-6">
       <h1 className="svg-page-title text-center">Compare trials</h1>
       <div className="grid gap-4 md:grid-cols-2">
-        <TrialPicker label="Trial A" trial={left} onSelect={setLeft} />
-        <TrialPicker label="Trial B" trial={right} onSelect={setRight} />
+        <TrialPicker label="Trial A" trial={left} records={records} onSelect={setLeft} />
+        <TrialPicker label="Trial B" trial={right} records={records} onSelect={setRight} />
       </div>
       {left && right && (left.experiment_id === right.experiment_id ? <p role="status">Select two distinct trials.</p> : (
         <SelectedComparison key={JSON.stringify([left.experiment_id, right.experiment_id])} left={left} right={right} />

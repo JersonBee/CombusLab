@@ -3,8 +3,7 @@ import { ArrowUpRight, ExternalLink } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { RequestStatus, useReading } from '../components/ScientificReading'
 import { useInventory, type Catalog, type Study } from '../components/StudyInventory'
-import { CldFlameLink } from '../components/CldFlameEvidence'
-import { cldFlame } from '../cldFlame'
+import { nasaResearch } from '../nasaResearch'
 
 const formatCount = new Intl.NumberFormat('en')
 
@@ -26,11 +25,28 @@ export function Resources() {
     <div className="space-y-6">
       <h1 className="svg-page-title text-center">Resources</h1>
       <section className="svg-black-panel p-6 md:p-10 space-y-4">
-        <h2 className="svg-section-heading">NASA PSI sources</h2>
-        <article className="svg-subpanel space-y-2 p-4">
-          <h3 className="font-semibold"><CldFlameLink /></h3>
-          <a className="resource-link" href={cldFlame.psi}>NASA PSI test-day table</a>
-        </article>
+        <h2 className="svg-section-heading">NASA combustion research library</h2>
+        <ul className="grid gap-4 md:grid-cols-2">
+          {nasaResearch.map(({ title, topic, summary, links, app, coverage }) => (
+            <li className="svg-subpanel space-y-3 p-4 md:p-5" key={title}>
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                <h3 className="svg-section-heading">{title}</h3>
+                <span className="text-sm text-muted">{topic}</span>
+              </div>
+              <p>{summary}</p>
+              <ul className="flex flex-wrap gap-x-4 gap-y-2">
+                {links.map(({ label, url }) => (
+                  <li key={url}><a className="resource-link" href={url}>{label} <ExternalLink size={13} aria-hidden="true" /></a></li>
+                ))}
+              </ul>
+              <p className="text-sm text-muted">{coverage}</p>
+              {app && <Link className="resource-link" to={app.path}>{app.label}</Link>}
+            </li>
+          ))}
+        </ul>
+      </section>
+      <section className="svg-black-panel p-6 md:p-10 space-y-4">
+        <h2 className="svg-section-heading">Integrated trial inventory</h2>
         {!inventory.data ? <RequestStatus {...inventory} /> : !inventory.data.rows.length ? <p>No sources available.</p> : (
           <ul className="grid gap-3 sm:grid-cols-2">
             {inventory.data.rows.map(study => (

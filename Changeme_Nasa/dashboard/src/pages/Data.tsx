@@ -1,3 +1,4 @@
+import { useAssistantContext } from '../assistantContext'
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { CldFlameLink } from '../components/CldFlameEvidence'
@@ -25,6 +26,7 @@ function ModelData({ trial, params }: { trial: Evidence; params: URLSearchParams
   const [window, setWindow] = useState(initialSelection.window)
   const [selection, setSelection] = useState({ channel, ...window })
   const invalidWindow = !isSeriesWindowValid(window)
+  useAssistantContext({ datasetId: trial.experiment_id })
   return (
     <section className="svg-subpanel p-4 space-y-4">
       <h2 className="svg-section-heading">{trial.study_name} · <code>{trial.experiment_id}</code></h2>
@@ -82,6 +84,7 @@ export function DataLab() {
   const [study, setStudy] = useState('')
   const [result, setResult] = useState('')
   const [query, setQuery] = useState('')
+  useAssistantContext({ activeFilters: { investigation_id: study, coverage: result, q: query } })
   const records = evidence.data?.rows ?? []
   const trial = records.find(record => record.experiment_id === params.get('experiment_id'))
   const available = records.filter(row =>

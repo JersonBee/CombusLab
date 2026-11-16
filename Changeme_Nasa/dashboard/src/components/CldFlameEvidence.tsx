@@ -1,3 +1,4 @@
+import { useAssistantContext } from '../assistantContext'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { cldFlame, rankCldFlame } from '../cldFlame'
@@ -33,6 +34,7 @@ export function CldFlameRelevance({ scenario }: { scenario: Scenario }) {
 }
 
 export function CldFlameEvidence() {
+  useAssistantContext({ investigationId: 'PSI-21', datasetId: 'PSI-21', chart: { kind: 'test-days' } })
   const reading = useReading<TestDayTable>(cldFlame.endpoint)
   const [testType, setTestType] = useState('')
   const table = reading.data

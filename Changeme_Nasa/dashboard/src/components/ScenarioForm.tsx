@@ -1,11 +1,8 @@
 import { useState } from 'react'
 import { objectives, type Scenario } from '../scientificEvidence'
 
-export const scenarios = {
-  spacecraft: { gravity: 'microgravity', oxygen: '', pressure: '', airflow: '', material: '', objective: 'spread' },
-  lunar: { gravity: 'lunar', oxygen: '32', pressure: '10.2', airflow: '', material: '', objective: 'materials' },
-  martian: { gravity: 'martian', oxygen: '', pressure: '', airflow: '', material: '', objective: 'extinction' },
-} satisfies Record<string, Scenario>
+import { scenarios } from '../../../../supabase/functions/_shared/scenarios'
+export { scenarios }
 
 const scenarioLabels = { spacecraft: 'Spacecraft in microgravity', lunar: 'Lunar habitat example', martian: 'Martian habitat example' }
 export function ScenarioForm({ onApply, submitLabel }: { onApply: (scenario: Scenario) => void; submitLabel: string }) {

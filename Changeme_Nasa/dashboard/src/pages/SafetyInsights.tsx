@@ -1,3 +1,4 @@
+import { useAssistantContext } from '../assistantContext'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EvidenceLinks } from '../components/EvidenceLinks'
@@ -10,6 +11,7 @@ import { rankStudies, researchContext, summarizeScenario, type Scenario } from '
 export function SafetyInsights() {
   const evidence = useEvidence()
   const [scenario, setScenario] = useState<Scenario>(scenarios.spacecraft)
+  useAssistantContext({ scenario })
   const trials = evidence.data?.rows ?? []
   const coverage = summarizeScenario(trials, scenario)
   const candidates = rankStudies(trials, scenario).filter(study => study.best.matches > 0)

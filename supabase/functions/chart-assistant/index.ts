@@ -1,4 +1,7 @@
-import { completions } from './providers.ts'
+import { answerChat, emptyReply } from './chat.ts'
+import { parseChatRequest } from './chatRequest.ts'
+import { createEvidenceReader } from './retrieval.ts'
+import { completions, selectScientificEvidence } from './providers.ts'
 import { channels, chartObservations, summarizeChart, type Channel } from './evidence.ts'
 import { reserveAssistantRequest } from './quota.ts'
 const json = (body: unknown, status = 200) => Response.json(body, { status })
@@ -45,6 +48,13 @@ async function explain(request: Request) {
     if (!chart || typeof chart !== 'object' || Array.isArray(chart)) throw new Error('Invalid payload')
   } catch {
     return json({ error: 'Invalid JSON' }, 400)
+  }
+  if (chart.mode === 'chat') {
+    const input = parseChatRequest(chart)
+    if (!input) return json(emptyReply('ERROR'), 400)
+    const reply = await answerChat(input, createEvidenceReader(evidenceOrigin), async (request, evidence) =>
+      await reserveAssistantRequest() === 'granted' ? await selectScientificEvidence(request, evidence) : null)
+    return json(reply)
   }
   const { experiment_id, channel, from_s, to_s, question } = chart
   if (typeof experiment_id !== 'string' || !/^PSI-(98|99|100):[\w.-]+:r\d+$/.test(experiment_id) ||

@@ -1,3 +1,4 @@
+import { useAssistantContext } from '../assistantContext'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { DynamicBarChart } from '../components/Charts'
@@ -34,8 +35,13 @@ type Detail = {
 }
 function TrialDetail({ id }: { id: string }) {
   const detail = useReading<Detail>('/api/experiment?' + new URLSearchParams({ experiment_id: id }))
-  if (!detail.data) return <RequestStatus {...detail} />
-  const { experiment, conditions } = detail.data
+  const experiment = detail.data?.experiment
+  const conditions = detail.data?.conditions ?? []
+  const hasSeries = experiment && Number(experiment.saffire_filas) + Number(experiment.cygnus_filas) > 0
+  useAssistantContext(hasSeries || !conditions.some(row => row.value !== null && (row.unit === '%' || row.unit === 'ppm'))
+    ? {} : { chart: { kind: 'conditions' } })
+  if (!detail.data || !experiment) return <RequestStatus {...detail} />
+
   const context = researchContext[experiment.investigation_id]
   return (
     <section className="svg-subpanel p-5 space-y-4" aria-label="Trial details">
@@ -79,7 +85,7 @@ function TrialDetail({ id }: { id: string }) {
       {conditions.length > 0 && <ConditionCharts conditions={conditions} />}
       {conditions.length > 0 && <Link className="resource-link"
         to={'/data-lab?' + new URLSearchParams({ experiment_id: id })}>Export conditions in Data Lab</Link>}
-      {Number(experiment.saffire_filas) + Number(experiment.cygnus_filas) > 0 ? <TrialSeries id={id} showAssistant /> : (
+      {hasSeries ? <TrialSeries id={id} showAssistant /> : (
         <p>{conditions.length ? 'Test conditions are available in the table above.' : 'This catalog entry provides trial identification and provenance.'} Synchronized measurements are unavailable for this trial.</p>
       )}
     </section>
@@ -129,6 +135,7 @@ function DiscoverCatalog({ investigation, experiment, coverage }: {
   const [trialId, setTrialId] = useState(experiment)
   const selectedTrial = useRef<HTMLDivElement>(null)
   const catalog = useEvidence()
+  useAssistantContext({ experimentId: trialId, investigationId: filters.investigation_id, activeFilters: filters })
   const records = catalog.data?.rows ?? []
   const directions = [...new Set(records.flatMap(record => record.flow_direction ? [record.flow_direction] : []))].sort()
   const matches = records.filter(row => {

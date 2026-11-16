@@ -102,6 +102,7 @@ export function Dashboard() {
           <h1>Fire in microgravity</h1>
           <p>What happens to a flame in orbit? Explore NASA’s experiments one reading at a time.</p>
           <Link className="resource-link orbital-notebook-link" to={cldFlame.path}>Open the ACME field notes <span aria-hidden="true">↗</span></Link>
+          <div><Link className="resource-link orbital-notebook-link mt-2" to="/flight-notebook">Try the SAFFIRE ventilation case <span aria-hidden="true">↗</span></Link></div>
         </div>
         <PixelFlame />
       </header>
