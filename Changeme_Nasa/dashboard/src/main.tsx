@@ -1,7 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import * as Sentry from '@sentry/react'
-import '@fontsource-variable/fredoka'
 import '@fontsource-variable/dm-sans'
 import '@fontsource-variable/jetbrains-mono'
 import './index.css'

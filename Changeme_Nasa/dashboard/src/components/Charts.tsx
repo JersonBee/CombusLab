@@ -23,19 +23,23 @@ ChartJS.register(
   Filler,
 )
 
-const BASE_TOOLTIP = {
-  backgroundColor: '#0A0806',
-  borderColor: '#FEB352',
+export const chartColors = {
+  cyan: '#58E0ED',
+  orbital: '#82A7FF',
+  text: '#F0F6FF',
+  muted: '#ABC0D5',
+  grid: '#52698465',
+}
+
+export const chartTooltip = {
+  backgroundColor: '#080F1F',
+  borderColor: '#526984',
   borderWidth: 1,
-  titleColor: '#B7E4F9',
-  bodyColor: '#F5EDE4',
+  titleColor: chartColors.cyan,
+  bodyColor: chartColors.text,
   padding: 12,
   cornerRadius: 12,
 }
-
-const GRID_COLOR = 'rgba(254, 179, 82, 0.14)'
-const TICK_COLOR = '#E2B84D'
-const AXIS_TITLE_COLOR = '#B7E4F9'
 
 export function DynamicBarChart({
   rows,
@@ -44,7 +48,7 @@ export function DynamicBarChart({
   labelTitle = labelColumn,
   valueTitle = valueColumn,
   horizontal = false,
-  accentColor = '#FEB352',
+  accentColor = chartColors.cyan,
   maximum,
   maxBars = 24,
 }: {
@@ -83,32 +87,33 @@ export function DynamicBarChart({
     indexAxis: horizontal ? 'y' : 'x',
     responsive: true,
     maintainAspectRatio: false,
+    animation: false,
     plugins: {
-      legend: { labels: { color: '#F5EDE4', font: { size: 12 } } },
-      tooltip: BASE_TOOLTIP,
+      legend: { display: false },
+      tooltip: chartTooltip,
     },
     scales: {
       x: {
         beginAtZero: horizontal,
         max: horizontal ? maximum : undefined,
-        grid: { color: GRID_COLOR },
-        ticks: { color: TICK_COLOR, font: { size: 11 } },
+        grid: { color: chartColors.grid },
+        ticks: { color: chartColors.muted, font: { size: 11 } },
         title: {
           display: true,
           text: horizontal ? valueTitle : labelTitle,
-          color: AXIS_TITLE_COLOR,
+          color: chartColors.text,
           font: { size: 11, weight: 'bold' },
         },
       },
       y: {
         beginAtZero: !horizontal,
         max: horizontal ? undefined : maximum,
-        grid: { color: GRID_COLOR },
-        ticks: { color: TICK_COLOR, font: { size: 11 } },
+        grid: { color: chartColors.grid },
+        ticks: { color: chartColors.muted, font: { size: 11 } },
         title: {
           display: true,
           text: horizontal ? labelTitle : valueTitle,
-          color: AXIS_TITLE_COLOR,
+          color: chartColors.text,
           font: { size: 11, weight: 'bold' },
         },
       },

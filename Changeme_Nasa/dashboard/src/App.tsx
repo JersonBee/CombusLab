@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { BrowserRouter, NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
-import { ChevronLeft } from 'lucide-react'
+import { Activity, BookOpen, ChevronLeft, Database, GitCompareArrows, ListOrdered, Menu, Pause, Play, Search, ShieldCheck } from 'lucide-react'
 import logoSvg from './assets/logo.svg'
 import assistantIcon from './assets/chart-assistant.svg'
 import { Dashboard } from './pages/Dashboard'
@@ -14,13 +14,13 @@ const Resources = lazy(() => import('./pages/Resources').then(module => ({ defau
 const ResourceDetail = lazy(() => import('./pages/Resources').then(module => ({ default: module.ResourceDetail })))
 
 const NAV_ITEMS = [
-  { to: '/', label: 'Dashboard' },
-  { to: '/discover', label: 'Discover' },
-  { to: '/ranking', label: 'Ranking' },
-  { to: '/compare', label: 'Compare' },
-  { to: '/data-lab', label: 'Data Lab' },
-  { to: '/safety-insights', label: 'Safety Insights' },
-  { to: '/resources', label: 'Resources' },
+  { to: '/', label: 'Dashboard', Icon: Activity },
+  { to: '/discover', label: 'Discover', Icon: Search },
+  { to: '/ranking', label: 'Ranking', Icon: ListOrdered },
+  { to: '/compare', label: 'Compare', Icon: GitCompareArrows },
+  { to: '/data-lab', label: 'Data Lab', Icon: Database },
+  { to: '/safety-insights', label: 'Safety Insights', Icon: ShieldCheck },
+  { to: '/resources', label: 'Resources', Icon: BookOpen },
 ]
 const desktopNavigation = '(min-width: 1024px)'
 
@@ -31,6 +31,7 @@ function LegacyRoute({ to }: { to: string }) {
 
 function Shell() {
   const [menuOpen, setMenuOpen] = useState(() => window.matchMedia(desktopNavigation).matches)
+  const [motionPaused, setMotionPaused] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -50,8 +51,11 @@ function Shell() {
   }
 
   return (
-    <div className="dashboard-shell" data-menu-open={menuOpen}>
-      <div className="dashboard-backdrop" aria-hidden="true"><span /><span /></div>
+    <div className="dashboard-shell" data-menu-open={menuOpen} data-motion-paused={motionPaused}>
+      <div className="dashboard-backdrop" aria-hidden="true">
+        <div className="orbital-sky-photo" />
+        <div className="orbital-sky-stars" />
+      </div>
       <aside className="svg-sidebar">
         <button
           type="button"
@@ -62,11 +66,13 @@ function Shell() {
           aria-controls="main-navigation"
         >
           <img src={logoSvg} alt="" width={42} height={42} />
-          {menuOpen && <><span>CombusLab</span><ChevronLeft size={18} aria-hidden="true" /></>}
+          <span className="dashboard-wordmark">CombusLab</span>
+          {menuOpen ? <ChevronLeft className="dashboard-menu-indicator" size={19} aria-hidden="true" /> :
+            <Menu className="dashboard-menu-indicator" size={19} aria-hidden="true" />}
         </button>
 
         <nav id="main-navigation" className="dashboard-navigation" aria-label="Main navigation" hidden={!menuOpen}>
-          {NAV_ITEMS.map(({ to, label }) => (
+          {NAV_ITEMS.map(({ to, label, Icon }) => (
             <NavLink
               key={to}
               to={to}
@@ -74,16 +80,22 @@ function Shell() {
               onClick={() => {
                 if (!window.matchMedia(desktopNavigation).matches) setMenuOpen(false)
               }}
-              className={({ isActive }) => 'svg-nav-link ' + (isActive ? 'svg-nav-link-active' : 'svg-nav-link-inactive')}
+              className="svg-nav-link"
             >
-              {label}
+              <span className="nav-flame" aria-hidden="true"><Icon size={16} strokeWidth={1.8} /><span /></span>
+              <span>{label}</span>
             </NavLink>
           ))}
+          <button type="button" className="ambient-control" aria-pressed={motionPaused}
+            onClick={() => setMotionPaused(paused => !paused)}>
+            {motionPaused ? <Play size={14} aria-hidden="true" /> : <Pause size={14} aria-hidden="true" />}
+            {motionPaused ? 'Resume motion' : 'Pause motion'}
+          </button>
         </nav>
       </aside>
 
       <main className="dashboard-main">
-        <div className="max-w-[1060px] mx-auto">
+        <div className="dashboard-content">
           <Suspense fallback={<p role="status">Loading view…</p>}>
             <Routes>
               <Route path="/" element={<Dashboard />} />
@@ -100,10 +112,16 @@ function Shell() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Suspense>
+          <footer className="dashboard-footer">
+            Sky image: <a className="resource-link" href="https://science.nasa.gov/missions/hubble/hubble-revisits-the-veil-nebula/">
+              ESA/Hubble &amp; NASA, Z. Levay
+            </a> · Color-tinted for CombusLab
+          </footer>
         </div>
       </main>
 
       <button type="button" className="assistant-launcher" aria-label="Open chart assistant" onClick={openAssistant}>
+        <span className="assistant-orbit" aria-hidden="true" />
         <img src={assistantIcon} alt="" width={60} height={60} />
       </button>
     </div>

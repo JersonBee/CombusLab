@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Line } from 'react-chartjs-2'
-import '../components/Charts'
+import { chartColors, chartTooltip } from '../components/Charts'
 import { RequestStatus, useReading } from '../components/ScientificReading'
 import { DownloadLinks } from '../components/EvidenceLinks'
 import { defaultSeriesWindow, isSeriesWindowValid } from '../seriesSelection'
@@ -143,15 +143,19 @@ function SeriesComparison({ left, right }: { left: Trial; right: Trial }) {
       {seriesA && seriesB && reason === '' && (
         <div className="h-80">
           <Line role="img" aria-label="Comparison of synchronized trial measurements" options={{
-            responsive: true, maintainAspectRatio: false, parsing: false,
+            responsive: true, maintainAspectRatio: false, parsing: false, animation: false,
+            plugins: { legend: { labels: { color: chartColors.text, usePointStyle: true, pointStyle: 'line' } }, tooltip: chartTooltip },
             scales: {
-              x: { type: 'linear', title: { display: true, text: 'Elapsed time (s)' } },
-              y: { title: { display: true, text: (selection.channel === 'o2' ? 'O₂' : 'CO₂') + ' (' + channelUnit(seriesA, selection.channel) + ')' } },
+              x: { type: 'linear', title: { display: true, text: 'Elapsed time (s)', color: chartColors.text },
+                ticks: { color: chartColors.muted }, grid: { color: chartColors.grid } },
+              y: { title: { display: true, color: chartColors.text,
+                text: (selection.channel === 'o2' ? 'O₂' : 'CO₂') + ' (' + channelUnit(seriesA, selection.channel) + ')' },
+                ticks: { color: chartColors.muted }, grid: { color: chartColors.grid } },
             },
           }} data={{ datasets: [seriesA, seriesB].map((series, index) => ({
             label: index === 0 ? left.experiment_id : right.experiment_id,
             data: series.rows.map((row) => ({ x: row.time_s, y: row[selection.channel] })),
-            borderColor: index === 0 ? '#B7E4F9' : '#FEB352',
+            borderColor: index === 0 ? chartColors.cyan : chartColors.orbital,
             borderDash: index === 0 ? [] : [5, 4],
             pointRadius: 0, pointHitRadius: 5, spanGaps: false,
           })) }} />

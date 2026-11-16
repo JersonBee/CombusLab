@@ -2,14 +2,14 @@ import { useId, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { ChartOptions } from 'chart.js'
 import { Line } from 'react-chartjs-2'
-import './Charts'
+import { chartColors, chartTooltip } from './Charts'
 import { ChartAssistant } from './ChartAssistant'
 import { RequestStatus, useReading } from './ScientificReading'
 import { defaultSeriesWindow, isSeriesWindowValid } from '../seriesSelection'
 
 const channels = [
-  { name: 'o2', label: 'Oxygen (O₂)', color: '#B7E4F9' },
-  { name: 'co2', label: 'Carbon dioxide (CO₂)', color: '#FEB352' },
+  { name: 'o2', label: 'Oxygen (O₂)', color: chartColors.cyan },
+  { name: 'co2', label: 'Carbon dioxide (CO₂)', color: chartColors.orbital },
 ] as const
 
 type Channel = typeof channels[number]['name']
@@ -38,11 +38,11 @@ export function TrialSeries({ id, showAssistant = false }: { id: string; showAss
   return (
     <section className="svg-subpanel min-w-0 space-y-4 p-4 md:p-5" aria-label="Synchronized measurements">
       <h2 className="svg-section-heading">Synchronized measurements</h2>
-      <form className="flex flex-wrap items-end gap-3" onSubmit={event => {
+      <form className="series-window" onSubmit={event => {
         event.preventDefault()
         if (!invalidInterval) setInterval(draft)
       }}>
-        <label className="flex flex-col">Channel
+        <label className="series-window-channel flex flex-col">Channel
           <select className="svg-input p-2" value={selected?.name ?? ''} disabled={!selected}
             onChange={event => setPreferredChannel(event.target.value as Channel)}>
             {!selected && <option value="">No channel available</option>}
@@ -58,7 +58,9 @@ export function TrialSeries({ id, showAssistant = false }: { id: string; showAss
         ))}
         <button className="svg-input px-3 py-2" type="submit">Apply time window</button>
       </form>
-      <p id={errorId} role={invalidInterval ? 'alert' : undefined}>Use an ascending time window of up to 60 seconds.</p>
+      <p className="series-window-note" id={errorId} role={invalidInterval ? 'alert' : undefined}>
+        {invalidInterval ? 'Use an ascending time window of up to 60 seconds.' : 'Up to 60 seconds per window.'}
+      </p>
       {!data ? <RequestStatus {...series} /> : (
         <>
           {selected ? (
@@ -94,12 +96,13 @@ function SeriesChart({ label, unit, color, points }: {
     responsive: true,
     maintainAspectRatio: false,
     parsing: false,
-    plugins: { legend: { display: false } },
+    animation: false,
+    plugins: { legend: { display: false }, tooltip: chartTooltip },
     scales: {
-      x: { type: 'linear', title: { display: true, text: 'Elapsed time (s)', color: '#F5EDE4' },
-        ticks: { color: '#D4CDD0' }, grid: { color: '#ffffff20' } },
-      y: { title: { display: true, text: label + ' (' + unit + ')', color: '#F5EDE4' },
-        ticks: { color: '#D4CDD0' }, grid: { color: '#ffffff20' } },
+      x: { type: 'linear', title: { display: true, text: 'Elapsed time (s)', color: chartColors.text },
+        ticks: { color: chartColors.muted }, grid: { color: chartColors.grid } },
+      y: { title: { display: true, text: label + ' (' + unit + ')', color: chartColors.text },
+        ticks: { color: chartColors.muted }, grid: { color: chartColors.grid } },
     },
   }
   return (
