@@ -1,4 +1,6 @@
-# CombusLab
+# CombusLab developer guide
+
+See the [project overview](../README.md) for the submission summary, feature tour, and NASA sources.
 
 The React/Vite dashboard and Node.js API deploy together. Dashboard opens with a synchronized SAFFIRE series, Discover shows trial details, and Ranking orders investigations by documented scenario matches. Compare shows conditions side by side and overlays compatible measurements. Data Lab provides exports, Safety Insights explains evidence coverage, and Resources links to NASA PSI.
 
@@ -6,7 +8,7 @@ The React/Vite dashboard and Node.js API deploy together. Dashboard opens with a
 
 Use the Git repository root as the Vercel Root Directory so Vercel reads the [root configuration](../vercel.json). One deployment publishes the dashboard and its Node.js functions. Browser requests use relative `/api/*` URLs on the same domain.
 
-The HTTP adapter validates requests and coordinates the catalog, experiments, series and export modules in `server/modules/`. Read operations share a read-only PostgreSQL snapshot. The chart assistant calls the Supabase Edge Function, where provider credentials and session verification are managed. Sentry monitors the dashboard and API.
+The HTTP adapter validates requests and coordinates the catalog, experiments, series and export modules in `server/modules/`. Read operations share a read-only PostgreSQL snapshot. The chart assistant calls the Supabase Edge Function, which holds the provider credentials and serves public requests under a shared quota. Sentry monitors the dashboard and API.
 
 ## Local development
 
@@ -22,7 +24,7 @@ The API requires `COMBUSLAB_DB_HOST`, `COMBUSLAB_DB_USER`, `COMBUSLAB_DB_PASSWOR
 | `GET /api/catalog?view=test-days&investigation_id=PSI-21` | Versioned CLD Flame counts by test day and test type, with the NASA PSI source and file checksum. |
 | `GET /api/catalog?investigation_id=PSI-25&page=1` | Up to 20 trial records with coverage flags. Optional filters are `q`, `flow_min` and `flow_max` in cm/s. |
 | `GET /api/experiment?experiment_id=PSI-25:B10:r11` | BASS-II trial metadata, PSI provenance and six tabular conditions. |
-| `GET /api/series?experiment_id=PSI-100:S1:r2&from_s=0&to_s=60` | 1,877 synchronized rows with O₂ and CO₂, units, provenance and time in seconds. |
+| `GET /api/series?experiment_id=PSI-100:S1:r2&from_s=0&to_s=60` | Synchronized rows with O₂ and CO₂, units, provenance and time in seconds. |
 | `GET /api/export?experiment_id=PSI-100:S1:r2&mode=series&channel=o2&from_s=0&to_s=60&format=csv` | The selected channel at native resolution with units and source references. The format can be `csv` or `json`. |
 | `GET /api/export?experiment_id=PSI-25:B10:r11&mode=conditions&format=json` | Experimental conditions with units, qualifiers, bounds and provenance. |
 
@@ -38,13 +40,13 @@ Open Compare and choose two distinct trial IDs from the catalog. The overlay sup
 
 Downloads are per trial. The series links preserve the selected channel and time window. The conditions links export the test observations listed in the card. For CSV, see [export fields](docs/export-fields.md). Unquoted empty CSV fields and JSON nulls represent missing values.
 
-## Chart assistant
+## Scientific copilot
 
-Open the assistant on a synchronized trial chart in Dashboard or Discover. The browser submits the active trial, channel, and time window without a user account. The Edge Function rereads the published series, calculates the summary, and asks the first available provider to choose verified observations. An alternate-channel suggestion requires available readings and an explicit click to change the chart.
+The floating copilot follows the active view and recent conversation. The inline assistant is available on synchronized trial charts. Both interfaces work without an account. The floating panel sends its question and recent subject context through the same-origin `/api/assistant/chat` endpoint. The inline assistant submits the active trial, channel, and time window. The Edge Function rereads the published series, calculates the summary, and asks the first available provider to choose verified observations. An alternate-channel suggestion requires available readings and an explicit click to change the chart.
 
 The frontend uses `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. The `chart-assistant` function uses `COMBUSLAB_ASSISTANT_ORIGINS` for allowed browser origins and `COMBUSLAB_EVIDENCE_ORIGIN` for the deployed scientific API. Groq, Cloudflare Workers AI, and Pollinations credentials stay in Supabase Edge Function secrets.
 
-Apply the public assistant quota migration before deploying `supabase/functions/chart-assistant` with gateway JWT verification disabled. The service-only quota allows up to 12 AI requests per minute across visitors. The assistant returns the calculated evidence summary when the quota is exhausted or unavailable, or when all providers fail. Publish the Edge Function alongside the Vercel frontend release. A Git push that triggers Vercel does not publish the Edge Function.
+Apply the public assistant quota and catalog cache migrations before deploying `supabase/functions/chart-assistant` with gateway JWT verification disabled. The service-only quota allows up to 12 AI requests per minute across visitors. The assistant returns the calculated evidence summary when the quota is exhausted or unavailable, or when all providers fail. Publish the Edge Function alongside the Vercel frontend release. A Git push that triggers Vercel does not publish the Edge Function.
 
 ## Testing and error monitoring
 
@@ -62,4 +64,3 @@ The dashboard and API run without a DSN. After setting the variables, redeploy a
 ## Database bootstrap
 
 `scripts/publish_metadata.py` initializes the `combuslab` schema from the project's synchronized DuckDB file. It requires DuckDB, psycopg, the official Supabase CA and an administrator connection to the database containing `public.nasa_synchronized`. The bootstrap is a one-time transaction, checks the four input row counts and provisions a login with SELECT grants for the four metadata tables and the synchronized readings. It prompts for the administrator password and writes the generated application login to the specified, previously absent local env file. Use `--help` for the file and connection arguments.
-
