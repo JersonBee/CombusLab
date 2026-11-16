@@ -39,3 +39,5 @@ export async function answerChat(input: ChatRequest, get: Reader, select: Select
     return emptyReply('ERROR')
   }
 }
+
+export { parseChatRequest } from './chatRequest.ts'

@@ -1,5 +1,4 @@
-import { answerChat, emptyReply } from '../../supabase/functions/chart-assistant/chat.ts'
-import { parseChatRequest } from '../../supabase/functions/chart-assistant/chatRequest.ts'
+import { answerChat, emptyReply, parseChatRequest } from './generated/assistant-evidence.mjs'
 import { readSnapshot } from './db.mjs'
 import { readEvidence, readInventory } from './modules/catalog.mjs'
 import { findExperiment, readConditions } from './modules/experiments.mjs'
