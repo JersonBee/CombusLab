@@ -2,6 +2,10 @@
   <img src="documentacion/readme/orbital-notebook.svg" alt="CombusLab. Fire in microgravity. NASA Space Apps Challenge 2026. A blue pixel flame floats over orbital notebook paper." width="1120">
 </p>
 
+<p align="center">
+  <img src="Changeme_Nasa/dashboard/src/assets/logo.svg" alt="Official CombusLab application logo" width="96">
+</p>
+
 <h1 align="center">CombusLab</h1>
 
 <p align="center"><strong>A field notebook for fire in microgravity</strong></p>
@@ -13,6 +17,7 @@
 </p>
 
 <p align="center">
+  <a href="#start-with-a-question">Try it</a> ·
   <a href="#explore-the-lab">Features</a> ·
   <a href="#data-and-nasa-sources">NASA data</a> ·
   <a href="#architecture-and-technology">Tech stack</a> ·
@@ -25,6 +30,15 @@
 
 CombusLab is an interactive research dashboard built for the 2026 NASA Space Apps Challenge, *Flame in Freefall*. It brings NASA microgravity combustion records into one place so students, researchers, and curious explorers can see how flames behave when gravity and airflow differ from everyday experience. Users can inspect synchronized gas readings, compare documented trial conditions, rank investigations for a fire-safety scenario, and ask a scientific copilot to explain the evidence with NASA citations. Flight Notebook turns a real SAFFIRE comparison into a guided investigation. Visitors follow published flame-front images, choose what they would measure next, and download an evidence note with their own observations. By making experimental conditions, missing measurements, and sources visible, CombusLab helps people find evidence relevant to spacecraft fire-safety questions and see where further testing is needed for future missions to the Moon and Mars.
 
+## Start with a question
+
+| I want to know… | Where to start |
+| --- | --- |
+| How do the published flame fronts look under two airflow conditions? | Open [Flight Notebook](https://combuslab.vercel.app/flight-notebook) and step through the SAFFIRE case. |
+| Do two trials share a material or similar gas conditions? | Open [Compare](https://combuslab.vercel.app/compare?a=PSI-98%3AS1%3Ar2&b=PSI-100%3AS1%3Ar2) with the SAFFIRE pair preselected. |
+| Which experiments could inform a lunar habitat question? | In [Ranking](https://combuslab.vercel.app/ranking), select the lunar preset and inspect the evidence behind each match. |
+| Can I take the measurements into my own analysis? | Open [Data Lab](https://combuslab.vercel.app/data-lab?experiment_id=PSI-100%3AS1%3Ar2), select the channel and time window, then export CSV or JSON. |
+
 ## Explore the lab
 
 | View | What you can do |
@@ -34,7 +48,7 @@ CombusLab is an interactive research dashboard built for the 2026 NASA Space App
 | **Ranking and Safety Insights** | Match documented trial conditions to adjustable spacecraft, lunar, or Martian scenarios. See which criteria match, differ, or lack evidence. Scores measure relevance to the selected scenario. |
 | **Data Lab** | Inspect candidate variables and export available series or experimental conditions as CSV or JSON. |
 | **Flight Notebook** | Step through NASA's published SAFFIRE-I and SAFFIRE-III flame-front composites, compare gas readings, and download a Markdown evidence note with your proposed next measurement. |
-| **Scientific copilot** | Open the pixel-art flame from any view, ask a follow-up about the active study or chart, and inspect NASA citations. The dashboard and copilot are public. |
+| **Scientific copilot** | Open the pixel-art copilot from any view, ask a follow-up about the active study or chart, and inspect NASA citations. The dashboard and copilot are public. |
 | **Resources** | Browse the NASA research library and see which investigations have integrated records, partial coverage, or external datasets. |
 
 ## Inside Flight Notebook
@@ -42,7 +56,7 @@ CombusLab is an interactive research dashboard built for the 2026 NASA Space App
 <table>
   <tr>
     <td align="center" width="138">
-      <img src="Changeme_Nasa/dashboard/src/assets/pixil-frame-0.svg" alt="CombusLab's pixel-art flame copilot" width="80">
+      <img src="Changeme_Nasa/dashboard/src/assets/pixil-frame-0.svg" alt="CombusLab's pixel-art copilot" width="80">
     </td>
     <td>
       <strong>Same fabric, different airflow.</strong><br>
@@ -60,6 +74,23 @@ CombusLab is an interactive research dashboard built for the 2026 NASA Space App
 We designed Flight Notebook around a question a visitor could investigate in a few minutes. How does changing airflow affect flame spread over the same fabric? Flight Notebook makes that question hands-on. A pixel-art flame marks the selected front in the published images, and the downloadable note captures the visitor's choice of measurement, their observations, and an open research question. The same trial pair opens directly in Compare. The visual identity combines a small pixel-art crew member with an orbital backdrop. The interface supports keyboard input and reduced motion.
 
 We prioritized sources with documented units, usable clocks, and trial-level provenance. The pipeline checks for duplicates and preserves missing values. Flight Notebook labels the published image interval separately from the instrument clocks because alignment between them has not been verified. Coverage varies by experiment, so comparison and ranking expose gaps instead of assuming equivalent conditions. The copilot retrieves evidence before calling a model and distinguishes insufficient evidence from questions outside its scope. The hardware behind the measurements was NASA's flight experiment equipment. Our team developed the software and worked with published data.
+
+## How the copilot follows the evidence
+
+1. Open the pixel-art copilot from the view you are exploring. The chat receives the current trial, dataset, chart channel and time window when those selections are available.
+2. Ask **“Explain this chart”** or start with a study, for example **“What does SAFFIRE-I study?”** Then ask **“Which datasets?”** to continue on the same subject.
+3. Check the linked NASA citations and distinguish the recorded measurements from the calculations and comparisons used to explain them.
+
+The chat is public. Minimizing it keeps the draft and conversation in the browser. The trash button clears both and cancels a pending request. The shared cache holds catalog evidence for five minutes. Each conversation remains in its own browser session.
+
+## How to interpret the results
+
+| What the app shows | What to check before drawing a conclusion |
+| --- | --- |
+| A gas-series overlay | Both trials must have readings in compatible units and time references. Each zero is the first calibrated record of its own trial. |
+| A scenario ranking | Each selected criterion has equal weight. Missing criteria stay in the denominator, so a score describes how much documented evidence matches the scenario. |
+| Flame-front images alongside gas charts | NASA's published composites and the gas traces use separate time references. The images illustrate the progression of the front and the gas charts show measured concentrations. |
+| Blank or unavailable values | A blank means a usable value is missing. Check the source and coverage before using the data in a calculation or model. |
 
 ## Data and NASA sources
 
@@ -110,6 +141,12 @@ flowchart LR
 | --- | --- |
 | Development and iteration | Google Gemini, Anthropic Claude, and OpenAI Codex |
 | Copilot at runtime | Groq, Cloudflare Workers AI, and Pollinations AI |
+
+## Verification
+
+- **Data preparation.** The pipeline checks source versions and hashes, units, unique trial and timestamp keys, and clock alignment before exporting the synchronized table.
+- **API and evidence.** The Vitest suite covers export semantics, chart interpretation, comparisons, citations, conversation follow-ups, and cache fallback. Husky runs it before commits.
+- **Chart fidelity.** The [developer guide](Changeme_Nasa/README.md#testing-and-error-monitoring) shows how to compare an API window with the reference DuckDB file, including timestamps, units, readings, and null positions.
 
 ## Run locally
 
