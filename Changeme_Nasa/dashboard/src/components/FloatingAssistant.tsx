@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Minus, Send, X } from 'lucide-react'
+import { Minus, Send, Trash2 } from 'lucide-react'
 import assistantIcon from '../assets/pixil-frame-0.svg'
 import { AssistantContext } from '../assistantContext'
 import { hasSafeSource, messages, type ChatContext, type ChatReply } from '../../../../supabase/functions/chart-assistant/chatContract'
@@ -55,7 +55,7 @@ function FloatingAssistant({ context }: { context: ChatContext }) {
   const launcher = useRef<HTMLButtonElement>(null)
   const composer = useRef<HTMLTextAreaElement>(null)
   const history = useRef<HTMLDivElement>(null)
-  const inFlight = useRef(false)
+  const inFlight = useRef<AbortController | null>(null)
   const open = view === 'open'
 
   useEffect(() => {
@@ -67,6 +67,14 @@ function FloatingAssistant({ context }: { context: ChatContext }) {
   }, [open, pending, turns])
 
   function hide(next: 'closed' | 'minimized') {
+    if (next === 'closed') {
+      const request = inFlight.current
+      inFlight.current = null
+      request?.abort()
+      setDraft('')
+      setPending('')
+      setTurns([])
+    }
     setView(next)
     launcher.current?.focus({ preventScroll: true })
   }
@@ -74,7 +82,8 @@ function FloatingAssistant({ context }: { context: ChatContext }) {
   async function send(input: string) {
     const question = input.trim()
     if (!question || inFlight.current) return
-    inFlight.current = true
+    const request = new AbortController()
+    inFlight.current = request
     setDraft('')
     setPending(question)
     let reply = failure
@@ -83,10 +92,10 @@ function FloatingAssistant({ context }: { context: ChatContext }) {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: question, context,
-          conversationHistory: turns.slice(-4).flatMap(turn => turn.reply.subjects.length
-            ? [{ question: turn.question.slice(0, 300), subjects: turn.reply.subjects }] : []),
+          conversationHistory: turns.filter(turn => turn.reply.status === 'ANSWERED' && turn.reply.subjects.length).slice(-4).map(turn =>
+            ({ question: turn.question.slice(0, 300), subjects: turn.reply.subjects })),
         }),
-        signal: AbortSignal.timeout(30000),
+        signal: AbortSignal.any([request.signal, AbortSignal.timeout(30000)]),
       })
       if (response.ok) {
         const data: ChatReply = await response.json()
@@ -96,9 +105,11 @@ function FloatingAssistant({ context }: { context: ChatContext }) {
     } catch {
       // Request errors share one user-facing state.
     } finally {
-      setTurns(previous => [...previous, { question, reply }].slice(-30))
-      setPending('')
-      inFlight.current = false
+      if (inFlight.current === request) {
+        inFlight.current = null
+        setTurns(previous => [...previous, { question, reply }].slice(-30))
+        setPending('')
+      }
     }
   }
 
@@ -114,7 +125,7 @@ function FloatingAssistant({ context }: { context: ChatContext }) {
       onKeyDown={event => {
         if (event.key === 'Escape') {
           event.stopPropagation()
-          hide('closed')
+          hide('minimized')
         }
       }}>
       <header className="assistant-chat-header">
@@ -122,8 +133,8 @@ function FloatingAssistant({ context }: { context: ChatContext }) {
         <button type="button" className="svg-input" aria-label="Minimize chat" onClick={() => hide('minimized')}>
           <Minus size={16} aria-hidden="true" />
         </button>
-        <button type="button" className="svg-input" aria-label="Close chat" onClick={() => hide('closed')}>
-          <X size={17} aria-hidden="true" />
+        <button type="button" className="svg-input" aria-label="Clear conversation and close chat" title="Clear conversation and close chat" onClick={() => hide('closed')}>
+          <Trash2 size={17} aria-hidden="true" />
         </button>
       </header>
       <div className="assistant-chat-history" role="log" aria-label="Conversation" ref={history} tabIndex={0}>

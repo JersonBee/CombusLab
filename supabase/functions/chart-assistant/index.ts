@@ -1,3 +1,4 @@
+import { withCatalogCache } from './catalogCache.ts'
 import { answerChat, emptyReply } from './chat.ts'
 import { parseChatRequest } from './chatRequest.ts'
 import { createEvidenceReader } from './retrieval.ts'
@@ -52,7 +53,7 @@ async function explain(request: Request) {
   if (chart.mode === 'chat') {
     const input = parseChatRequest(chart)
     if (!input) return json(emptyReply('ERROR'), 400)
-    const reply = await answerChat(input, createEvidenceReader(evidenceOrigin), async (request, evidence) =>
+    const reply = await answerChat(input, withCatalogCache(createEvidenceReader(evidenceOrigin)), async (request, evidence) =>
       await reserveAssistantRequest() === 'granted' ? await selectScientificEvidence(request, evidence) : null)
     return json(reply)
   }

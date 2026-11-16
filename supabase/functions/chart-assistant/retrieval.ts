@@ -91,13 +91,19 @@ export async function retrieve(request: ChatRequest, get: Get) {
   const compareAsked = comparisonPattern.test(query)
   const modelAsked = modelPattern.test(query)
   const researchAsked = researchPattern.test(query)
-  const historySubjects = conversationHistory.at(-1)?.subjects ?? []
-  const historyExplicit = explicitSubjects(conversationHistory.at(-1)?.question ?? '')
+  const previousTurn = [...conversationHistory].reverse().find(turn => turn.subjects.length > 0)
+  const historySubjects = previousTurn?.subjects ?? []
+  const historyExplicit = explicitSubjects(previousTurn?.question ?? '')
+  const pointsToPage = /\b(this|these|here|esta|este|estas|estos|aqui)\b/.test(query)
+  const continuation = /^(?:and\b|y\b|what about\b|how about\b|que hay de\b)/.test(query.replace(/^[¿¡]+/, ''))
+  const shortDataQuestion = query.split(/\s+/).length <= 6 && datasetAsked
+  const followUp = historySubjects.length > 0 && !pointsToPage && !explicit.studies.length && !explicit.trials.length &&
+    ((referential && (datasetAsked || researchAsked || chartAsked)) || continuation || shortDataQuestion)
   const cards: EvidenceCard[] = []
   const subjects: string[] = []
   let missing = ''
   const scoped = topicPattern.test(query) || explicit.studies.length || explicit.trials.length || chartAsked || datasetAsked ||
-    researchAsked || modelAsked || compareAsked || unsupportedMetric.test(query) || (referential && (historySubjects.length || context.experimentId || context.investigationId))
+    researchAsked || modelAsked || compareAsked || followUp || unsupportedMetric.test(query) || (referential && (historySubjects.length || context.experimentId || context.investigationId))
   if (unrelatedPattern.test(query) || !scoped) return { status: 'OUT_OF_SCOPE' as const, cards, subjects, missing }
 
   function add(kind: EvidenceCard['kind'], value: string, sources: Source[]) {
@@ -109,16 +115,14 @@ export async function retrieve(request: ChatRequest, get: Get) {
   }
 
   const namedStudy = explicit.studies.length > 0
-  const followUp = referential && !namedStudy && (datasetAsked || researchAsked || /\b(it|they|its|tiene|tienen)\b/.test(query))
-  const usePrevious = followUp && historySubjects.length > 0 && !/\b(this|these|here|esta|este|aqui)\b/.test(query)
   const trialIds = explicit.trials.length ? explicit.trials
     : namedStudy ? []
-    : usePrevious ? historySubjects.filter(id => id.includes(':')).slice(0, 2)
+    : followUp ? historySubjects.filter(id => id.includes(':')).slice(0, 2)
     : compareAsked || chartAsked && context.chart?.kind === 'overlay' ? context.selectedExperiments?.length ? context.selectedExperiments :
       context.currentPage === '/flight-notebook' ? ['PSI-98:S1:r2', 'PSI-100:S1:r2'] : []
     : [context.experimentId ?? context.datasetId].filter((id): id is string => Boolean(id?.includes(':')))
   const studyIds = explicit.studies.length ? explicit.studies
-    : usePrevious ? historySubjects.filter(id => !id.includes(':')).concat(historyExplicit.studies).slice(0, 5)
+    : followUp ? historySubjects.filter(id => !id.includes(':')).concat(historyExplicit.studies).slice(0, 5)
     : [context.investigationId, context.datasetId === 'PSI-21' ? 'PSI-21' : undefined]
         .filter((id): id is string => Boolean(id))
 
@@ -217,7 +221,7 @@ export async function retrieve(request: ChatRequest, get: Get) {
         '. The axis lists condition fields. It does not describe elapsed time.', trialSource(active))
       if (!cards.length) missing = 'No tabular conditions with charted values were found for this trial.'
     } else if (chartAsked && (context.chart?.kind === 'gas' || active.has_series)) {
-      const chart = context.chart?.kind === 'gas' ? context.chart : undefined
+      const chart = context.chart?.kind === 'gas' && (!followUp || context.experimentId === active.experiment_id) ? context.chart : undefined
       const [series] = await fetchSeries([active], chart, get)
       const channel = chart?.channel ?? active.series_channels[0]
       if (series && channel) addGas(active, series, channel, add)

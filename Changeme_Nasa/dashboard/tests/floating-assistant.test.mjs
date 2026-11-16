@@ -170,6 +170,8 @@ it('asks the existing Groq adapter for evidence IDs and rejects provider-authore
     if (url.hostname === 'evidence.example') {
       return Response.json(await reader(url.pathname.split('/').at(-1), Object.fromEntries(url.searchParams)))
     }
+    if (url.pathname.endsWith('/read_assistant_catalog_cache')) return Response.json(null)
+    if (url.pathname.endsWith('/write_assistant_catalog_cache')) return new Response(null, { status: 204 })
     if (url.hostname === 'supabase.example') return Response.json(true)
     expect(url.hostname).toBe('api.groq.com')
     expect(options.headers.Authorization).toBe('Bearer test-provider-key')
@@ -210,4 +212,39 @@ it('keeps the public chat available when the configured Edge Function rejects th
   } finally {
     vi.unstubAllEnvs()
   }
+})
+
+it('resolves short follow-ups against the last supported subject and respects an explicit page reference', async () => {
+  const history = [
+    { question: 'What does SAFFIRE-I study?', subjects: ['PSI-98'] },
+    { question: 'An unrelated question', subjects: [] },
+  ]
+  const followUp = await chat('Which datasets?', { investigationId: 'PSI-25' }, history)
+  expect(followUp.subjects).toContain('PSI-98')
+  expect(followUp.evidence.some(card => card.text.includes('with synchronized series'))).toBe(true)
+  const currentPage = await chat('What datasets does this investigation have?', { investigationId: 'PSI-25' }, history)
+  expect(currentPage.subjects).toEqual(['PSI-25'])
+})
+
+it('caches only shared catalog evidence and falls back to the source on cache errors', async () => {
+  const { withCatalogCache } = await import('../../../supabase/functions/chart-assistant/catalogCache')
+  vi.stubGlobal('Deno', { env: { get: name => ({ SUPABASE_URL: 'https://supabase.example', SUPABASE_SERVICE_ROLE_KEY: 'test' })[name] } })
+  const values = new Map()
+  const rpc = vi.fn(async (url, options) => {
+    const { cache_key, payload } = JSON.parse(options.body)
+    if (String(url).endsWith('/read_assistant_catalog_cache')) return Response.json(values.get(cache_key) ?? null)
+    values.set(cache_key, payload)
+    return new Response(null, { status: 204 })
+  })
+  vi.stubGlobal('fetch', rpc)
+  const read = vi.fn(reader)
+  const cached = withCatalogCache(read)
+  expect(await cached('catalog', { view: 'evidence' })).toEqual(await reader('catalog', { view: 'evidence' }))
+  expect(await cached('catalog', { view: 'evidence' })).toEqual(await reader('catalog', { view: 'evidence' }))
+  expect(read).toHaveBeenCalledTimes(1)
+  const calls = rpc.mock.calls.length
+  await cached('series', { experiment_id: a, from_s: '0', to_s: '60' })
+  expect(rpc).toHaveBeenCalledTimes(calls)
+  rpc.mockRejectedValue(new Error('Unavailable'))
+  expect(await cached('catalog', { view: 'inventory' })).toEqual(await reader('catalog', { view: 'inventory' }))
 })
