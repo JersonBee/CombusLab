@@ -2,7 +2,7 @@ export const channels = ['o2', 'co2'] as const
 export type Channel = typeof channels[number]
 
 type Source = { url: string | null; doi: string | null }
-type Series = {
+export type Series = {
   units: { channel: string; unit: string }[]
   rows: ({ time_s: number } & Record<Channel, number | null>)[]
   source: Source

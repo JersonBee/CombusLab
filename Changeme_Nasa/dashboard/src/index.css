@@ -10,7 +10,7 @@
   --color-cyan: #58E0ED;
   --color-orbital: #82A7FF;
   --color-warning: #F3BE78;
-  --font-display: "DM Sans Variable", "DM Sans", system-ui, sans-serif;
+  --font-display: "Fredoka Variable", "DM Sans Variable", system-ui, sans-serif;
   --font-sans: "DM Sans Variable", "DM Sans", system-ui, sans-serif;
   --font-mono: "JetBrains Mono Variable", "JetBrains Mono", monospace;
 }
@@ -215,21 +215,28 @@
 
 .nav-flame > span {
   position: absolute;
-  top: 10px;
-  right: 6px;
+  inset: -4px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.nav-flame > span::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 6px;
   width: 3px;
   height: 3px;
-  opacity: 0;
   background: var(--color-cyan);
-  box-shadow: 0 -3px var(--color-cyan), 0 -6px var(--color-orbital);
-  transition: transform 400ms steps(3, end), opacity 180ms ease;
+  box-shadow: 24px 26px var(--color-orbital), 27px 5px var(--color-ink);
 }
 
 .svg-nav-link:is(:hover, :focus-visible) .nav-flame > span {
   opacity: 1;
-  transform: translate(7px, -3px) rotate(90deg);
-  box-shadow: -4px 3px var(--color-orbital), 5px -3px var(--color-ink);
+  animation: nav-pixel-orbit 2.1s steps(36, end) infinite;
 }
+
+@keyframes nav-pixel-orbit { to { transform: rotate(1turn); } }
 
 .svg-nav-link:is(:hover, :focus-visible) {
   color: var(--color-ink);
@@ -286,10 +293,11 @@
 
 .orbital-hero-content { min-width: 0; }
 .orbital-hero h1 {
+  font-family: var(--font-display);
   font-size: clamp(2rem, 4vw, 4rem);
   line-height: .99;
-  font-weight: 800;
-  letter-spacing: -.065em;
+  font-weight: 630;
+  letter-spacing: -.035em;
   text-wrap: balance;
 }
 .orbital-hero p {
@@ -343,9 +351,16 @@
 .pixel-flame {
   display: grid;
   grid-template: repeat(12, var(--pixel)) / repeat(14, var(--pixel));
-  transform-origin: bottom center;
-  animation: pixel-float 2.6s steps(3, end) infinite alternate;
 }
+
+.pixel-flame [data-flicker="tip"] { animation: flame-tip 720ms steps(1, end) infinite; }
+.pixel-flame [data-flicker="edge"] { animation: flame-edge 490ms steps(1, end) infinite alternate; }
+@keyframes flame-tip {
+  24% { transform: translateX(calc(var(--pixel) * -1)); }
+  48% { transform: translateX(calc(var(--pixel) * -1)); }
+  76% { transform: translateX(var(--pixel)); }
+}
+@keyframes flame-edge { to { opacity: .57; transform: translateY(calc(var(--pixel) * -.35)); } }
 
 .orbital-sketch-spark {
   position: absolute;
@@ -360,13 +375,10 @@
 
 .orbital-sketch figcaption {
   margin-top: 5px;
-  font: italic 700 clamp(.65rem, 1.3vw, .88rem) var(--font-sans);
+  font: 580 clamp(.67rem, 1.3vw, .94rem) var(--font-display);
   text-align: center;
 }
 
-@keyframes pixel-float {
-  to { transform: translateY(-5px); }
-}
 .svg-page-title {
   font-family: var(--font-display);
   font-size: clamp(2rem, 4.5vw, 3.4rem);
@@ -379,7 +391,9 @@
   display: inline-block;
   width: fit-content;
   color: var(--color-ink);
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 1.13em;
+  font-weight: 570;
   line-height: 1.3;
   letter-spacing: -.015em;
 }
@@ -390,8 +404,9 @@
   border-radius: 18px;
   background: #111C30F6;
 }
-.svg-black-panel { box-shadow: 0 17px 38px #080F1F6E; }
-.svg-subpanel { background: #1B2A42D7; }
+.svg-black-panel { border-radius: 20px 13px 22px 15px; box-shadow: 3px 4px 0 #080F1F; }
+.svg-subpanel { background: #1B2A42D7; border-radius: 13px 19px 13px 18px; }
+.svg-subpanel > .svg-section-heading { text-decoration: underline dashed #82A7FF75; text-underline-offset: .3em; }
 .orbital-science-panel {
   border-top-color: #58E0EDAE;
   background: linear-gradient(160deg, #111C30 0%, #111C30FA 100%);
@@ -535,12 +550,13 @@ button.svg-input:hover:not(:disabled) {
   .dashboard-main { padding-top: 24px; }
 }
 
-[data-motion-paused="true"] :is(.orbital-sky-photo, .orbital-sky-stars, .pixel-flame, .assistant-orbit) {
+[data-motion-paused="true"] :is(.orbital-sky-photo, .orbital-sky-stars, .pixel-flame [data-flicker], .assistant-orbit, .nav-flame > span) {
   animation-play-state: paused;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :is(.orbital-sky-photo, .orbital-sky-stars, .pixel-flame, .assistant-orbit) { animation: none; }
+  :is(.orbital-sky-photo, .orbital-sky-stars, .pixel-flame [data-flicker], .assistant-orbit),
+  .svg-nav-link:is(:hover, :focus-visible) .nav-flame > span { animation: none; }
   :is(.assistant-launcher, .svg-nav-link, .svg-input),
   .nav-flame::before, .nav-flame::after, .nav-flame > span { transition: none; }
   .assistant-launcher:is(:hover, :focus-visible) { transform: none; }

@@ -33,7 +33,9 @@ function PixelFlame() {
         <div className="pixel-flame">
           {flamePixels.flatMap((row, y) => Array.from(row, (pixel, x) => {
             const color = pixelColors[pixel as keyof typeof pixelColors]
-            return color ? <span key={y * 14 + x} style={{ gridArea: `${y + 1} / ${x + 1}`, backgroundColor: color }} /> : null
+            const flicker = y < 6 ? 'tip' : pixel === 'b' && (x < 3 || x > 10) ? 'edge' : undefined
+            return color ? <span key={y * 14 + x} data-flicker={flicker}
+              style={{ gridArea: `${y + 1} / ${x + 1}`, backgroundColor: color }} /> : null
           }))}
         </div>
       </div>

@@ -6,6 +6,7 @@ import { chartColors, chartTooltip } from './Charts'
 import { ChartAssistant } from './ChartAssistant'
 import { RequestStatus, useReading } from './ScientificReading'
 import { defaultSeriesWindow, isSeriesWindowValid } from '../seriesSelection'
+import type { Series } from '../../../../supabase/functions/chart-assistant/evidence'
 
 const channels = [
   { name: 'o2', label: 'Oxygen (O₂)', color: chartColors.cyan },
@@ -13,12 +14,6 @@ const channels = [
 ] as const
 
 type Channel = typeof channels[number]['name']
-type Series = {
-  rows: ({ time_s: number } & Record<Channel, number | null>)[]
-  units: { channel: string; unit: string }[]
-  source: { url: string | null; doi: string | null }
-  truncated: boolean
-}
 
 export function TrialSeries({ id, showAssistant = false }: { id: string; showAssistant?: boolean }) {
   const errorId = useId()
@@ -81,7 +76,7 @@ export function TrialSeries({ id, showAssistant = false }: { id: string; showAss
           {showAssistant && !data.truncated && selected && (
             <ChartAssistant key={params.toString() + selected.name} id={id}
               from={Number(interval.from_s)} to={Number(interval.to_s)} channel={selected.name}
-              availableChannels={available.map(channel => channel.name)} onSelectChannel={setPreferredChannel} />
+              series={data} availableChannels={available.map(channel => channel.name)} onSelectChannel={setPreferredChannel} />
           )}
         </>
       )}

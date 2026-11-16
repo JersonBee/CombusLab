@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { chartObservations, summarizeChart, type Series } from '../../../../supabase/functions/chart-assistant/evidence'
 
 const url = import.meta.env.VITE_SUPABASE_URL
 const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
@@ -48,38 +49,44 @@ function nasaLink(value: string | null) {
   }
 }
 
-export function ChartAssistant({ id, from, to, channel, availableChannels, onSelectChannel }: {
+export function ChartAssistant({ id, from, to, channel, series, availableChannels, onSelectChannel }: {
   id: string; from: number; to: number; channel: Channel; availableChannels: readonly Channel[]
+  series: Series
   onSelectChannel: (channel: Channel) => void
 }) {
   const [question, setQuestion] = useState('')
-  const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
   const [turns, setTurns] = useState<Array<{ question: string; channel: Channel; reply: Answer }>>([])
 
-  if (!endpoint) return <p id="chart-assistant" tabIndex={-1}>Chart assistant is unavailable in this environment.</p>
-  const assistantUrl = endpoint
   async function ask(input: string) {
     const prompt = input.trim()
     if (!prompt || busy) return
     setBusy(true)
-    setNotice('')
+    let reply: Answer
     try {
-      const response = await fetch(assistantUrl, {
+      if (!endpoint) throw new Error('Live assistant is not configured')
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(key ? { apikey: key } : {}) },
         body: JSON.stringify({ experiment_id: id, from_s: from, to_s: to, channel, question: prompt }),
         signal: AbortSignal.timeout(26000),
       })
       if (!response.ok) throw new Error('Assistant request failed')
-      const reply: Answer = await response.json()
-      setTurns(previous => [...previous, { question: prompt, channel, reply }].slice(-5))
-      setQuestion('')
+      reply = await response.json()
+      if (!Array.isArray(reply?.sources) || (typeof reply.answer !== 'string' && !reply.reason)) {
+        throw new Error('Invalid assistant response')
+      }
     } catch {
-      setNotice('The assistant is temporarily unavailable.')
+      const summary = summarizeChart(series, channel)
+      reply = summary
+        ? { answer: Object.values(chartObservations(summary.evidence)).join('\n\n'),
+            evidence: summary.evidence, sources: [series.source], fallback: true, fallback_reason: 'unavailable' }
+        : { answer: null, reason: 'This window has insufficient evidence for a summary.', sources: [series.source] }
     } finally {
       setBusy(false)
     }
+    setTurns(previous => [...previous, { question: prompt, channel, reply }].slice(-5))
+    setQuestion('')
   }
 
   return (
@@ -93,7 +100,9 @@ export function ChartAssistant({ id, from, to, channel, availableChannels, onSel
             <p className="whitespace-pre-wrap">{reply.answer ?? reply.reason ?? 'Insufficient evidence'}</p>
             {reply.evidence && Number.isFinite(reply.evidence.first_time_s) && <ChartEvidence evidence={reply.evidence} />}
             {reply.provider && <p>AI-guided explanation · {reply.provider}</p>}
-            {reply.fallback && <p>{reply.fallback_reason === 'limit' ? 'Live AI has reached its current request limit. Showing the calculated summary.' : 'Showing a summary calculated directly from the measurements.'}</p>}
+            {reply.fallback && <p>{reply.fallback_reason === 'limit'
+              ? 'Live AI has reached its current request limit. Showing the calculated summary.'
+              : 'Showing a summary calculated directly from the measurements.'}</p>}
             {reply.sources.map((source, sourceIndex) => {
               const href = nasaLink(source.url)
               return <p key={sourceIndex}>{href && <a className="underline" href={href}>NASA PSI evidence</a>}{source.doi && <> · DOI {source.doi}</>}</p>
@@ -116,7 +125,6 @@ export function ChartAssistant({ id, from, to, channel, availableChannels, onSel
         </label>
         <button className="svg-input p-2" disabled={busy || !question.trim()}>{busy ? 'Generating…' : 'Ask about this chart'}</button>
       </form>
-      {notice && <p role="alert">{notice}</p>}
     </section>
   )
 }
